@@ -1,0 +1,66 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Anforderungen an die Excel-Datei</h5>
+            <div class="alert alert-info">
+                <ul class="mt-2">
+                <li><strong>Alle Zeilen müssen exakt die gleiche Anzahl an Spalten haben.</strong>  </li>
+                <li>Die Datei muss diese exakten Spaltenüberschriften enthalten:</li>
+                <div class="table-responsive mt-2">
+                    <table class="table table-bordered table-sm">
+                        <tbody>
+                            {% for key, value in template_columns.items %}
+                            <tr>
+                                <td><code><strong>{{ key }}</strong></code></td>
+                                <td>{{ value }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </ul>
+            </div>
+            
+            <form method="post" enctype="multipart/form-data" id="import-form">
+                {% csrf_token %}
+                <div class="form-check mb-3">
+                    &nbsp; 
+                </div>
+                <div class="form-group">
+                    {{ form.excel_file.label_tag }} </br>
+                    {{ form.excel_file }}
+                </div>
+                <div class="form-check mb-3">
+                    &nbsp; 
+                </div>
+                <div class="form-check mb-3">
+                    {{ form.overwrite }} &nbsp; 
+                    {{ form.overwrite.label_tag }}
+                </div>
+                <div class="form-check mb-3">
+                &nbsp; &nbsp; &nbsp; <strong>Hinweis:</strong> Das Überschreiben löscht alle bestehenden Einträge in der Datenbank! 
+                </div>
+                <div class="form-check mb-3">
+                    &nbsp; 
+                </div>
+                
+                <button type="submit" class="btn btn-success" id="submit-btn">
+                    <i class="fas fa-upload"></i> Importieren
+                </button>
+                <a href="../" class="btn btn-secondary">Abbrechen</a>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('import-form').addEventListener('submit', function() {
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importiere...';
+});
+</script>
+{% endblock %}

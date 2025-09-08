@@ -1,0 +1,179 @@
+<div class="card mb-5">
+
+    <div id="error-message" class="alert alert-danger d-none" role="alert">
+        <!-- Fehler werden dynamisch geladen -->
+    </div>
+
+    <div class="card-header py-3" data-bs-toggle="collapse" data-bs-target="#iso286CardBody" aria-expanded="true" aria-controls="iso286CardBody" style="cursor:pointer;">
+        <h1>ISO 286-1 und ISO 286-2: Passungen und Toleranzen</h1>
+        <p>Geometrische Produktspezifikation (GPS) - ISO-Grundnorm für Passungen</p>
+    </div> <!-- Card Header -->
+
+    <!-- Card Body -->
+    <div class="card-body collapse show" id="iso286CardBody">
+        <!-- Optional: Button kann entfernt werden, da Header jetzt die Collapse-Funktion übernimmt -->
+
+        <section id="introduction">
+            <div class="card mb-3" data-bs-toggle="collapse" data-bs-target="#iso286IntroBody" aria-expanded="false" aria-controls="iso286IntroBody" style="cursor:pointer;">
+                <div class="card-header">
+                    <h2>Einführung</h2>
+                </div>
+                <div class="card-body" id="iso286IntroBody">
+                    <p>Die Normen ISO 286-1 und ISO 286-2 definieren das System der Toleranzen, Abmaße und Passungen für glatte Werkstücke. Sie bilden die Grundlage für die Austauschbarkeit von Teilen in der Fertigungstechnik.</p>
+                </div>
+            </div>
+        </section> <!-- Introduction -->
+
+        <section id="basic-definitions">
+            <div class="card mb-3" data-bs-toggle="collapse" data-bs-target="#iso286DefinitionsBody" aria-expanded="false" aria-controls="iso286DefinitionsBody" style="cursor:pointer;">
+                <div class="card-header">
+                    <h2>Grundbegriffe und Definitionen</h2>
+                </div>
+            </div>
+            <div class="card mb-3" id="iso286DefinitionsBody">
+                <div class="card-body">
+                    <div class="definition">
+                        <p><span class="term">Nennmaß (Nominalmaß)</span>: Das Maß, von dem die Grenzmaße durch die Abmaße abgeleitet werden. Es dient als Bezugsmaß für alle Abweichungen.</p>
+                    </div>
+                    <div class="definition">
+                        <p><span class="term">Istmaß</span>: Durch Messung ermitteltes Maß an einem gefertigten Bauteil.</p>
+                    </div>
+                    <div class="definition">
+                        <p><span class="term">Grenzmaß</span>: Das maximal bzw. minimal zulässige Maß eines Bauteils.</p>
+                    </div>
+                    <div class="definition">
+                        <p><span class="term">Oberes Grenzmaß (Gö)</span>: Das größte zulässige Maß eines Bauteils.</p>
+                    </div>
+                    <div class="definition">
+                        <p><span class="term">Unteres Grenzmaß (Gu)</span>: Das kleinste zulässige Maß eines Bauteils.</p>
+                    </div>
+                    <div class="definition">
+                        <p><span class="term">Abmaß</span>: Die Differenz zwischen einem Grenzmaß und dem Nennmaß.</p>
+                    </div>
+                    <div class="definition">
+                        <p><span class="term">Oberes Abmaß (es für Wellen, ES für Bohrungen)</span>: Differenz zwischen oberem Grenzmaß und Nennmaß.</p>
+                    </div>
+                    <div class="definition">
+                        <p><span class="term">Unteres Abmaß (ei für Wellen, EI für Bohrungen)</span>: Differenz zwischen unterem Grenzmaß und Nennmaß.</p>
+                    </div>
+                    <div class="definition">
+                        <p><span class="term">Toleranz</span>: Differenz zwischen oberem und unterem Grenzmaß. Sie gibt die zulässige Maßabweichung an.</p>
+                    </div>
+                    <div class="definition">
+                        <p><span class="term">Toleranzzone</span>: Zone zwischen den beiden Grenzmaßen, begrenzt durch das obere und untere Abmaß.</p>
+                    </div>
+                    <div class="definition">
+                        <p><span class="term">Passung</span>: Beziehung zwischen zwei gepaarten Bauteilen (typischerweise Welle und Bohrung) aufgrund der Maßunterschiede vor der Montage.</p>
+                    </div>
+                    <div class="definition">
+                        <p><span class="term">Spielpassung</span>: Immer positive Maßdifferenz zwischen Bohrung und Welle.</p>
+                    </div>
+                    <div class="definition">
+                        <p><span class="term">Übermaßpassung</span>: Immer negative Maßdifferenz zwischen Bohrung und Welle.</p>
+                    </div>
+                    <div class="definition">
+                        <p><span class="term">Übergangspassung</span>: Passung, bei der je Istmaß der Bauteile entweder Spiel oder Übermaß auftreten kann.</p>
+                    </div>
+                    <div class="definition">
+                        <p><span class="term">Internationale Toleranzgrad (IT)</span>: Gruppe von Toleranzen, die bei gleichem Toleranzgrad IT für alle Nennmaße ähnliche relative Fertigungsgenauigkeiten bedingen.</p>
+                    </div>
+                    <div class="definition">
+                        <p><span class="term">Grundabmaß</span>: Das dem Nennmaß nächstgelegene Abmaß einer Toleranzzone. Es bestimmt die Lage der Toleranzzone relativ zum Nennmaß.</p>
+                    </div>
+                </div> <!-- Card Body -->
+            </div> <!-- Card -->
+        </section> <!-- Basic Definitions -->
+
+        <section id="formula-calculations">
+            <div class="card mb-3" data-bs-toggle="collapse" data-bs-target="#iso286FormulasBody" aria-expanded="false" aria-controls="iso286FormulasBody" style="cursor:pointer;">
+                <div class="card-header">
+                    <h2>Formeln und Berechnungen</h2>
+                </div>
+                <div class="card-body" id="iso286FormulasBody">
+                    <h3>1. Toleranz berechnen</h3>
+                    <div class="formula">
+                        T = Gö - Gu = ES - EI (für Bohrungen)<br>
+                        T = Gö - Gu = es - ei (für Wellen)
+                    </div>
+                    <p>Wobei:<br>
+                    T = Toleranz<br>
+                    Gö = Oberes Grenzmaß<br>
+                    Gu = Unteres Grenzmaß<br>
+                    ES = Oberes Abmaß der Bohrung<br>
+                    EI = Unteres Abmaß der Bohrung<br>
+                    es = Oberes Abmaß der Welle<br>
+                    ei = Unteres Abmaß der Welle</p>
+                    
+                    <div class="example">
+                        <p><strong>Beispiel:</strong> Für eine Welle mit Nennmaß 50 mm, es = +0,025 mm und ei = -0,025 mm:<br>
+                        T = 0,025 - (-0,025) = 0,050 mm</p>
+                    </div>
+                    
+                    <h3>2. Spiel berechnen</h3>
+                    <div class="formula">
+                        Maximales Spiel: S<sub>max</sub> = ES - ei<br>
+                        Minimales Spiel: S<sub>min</sub> = EI - es
+                    </div>
+                    <p>Für Spielpassungen muss S<sub>min</sub> ≥ 0 sein.</p>
+                    
+                    <h3>3. Übermaß berechnen</h3>
+                    <div class="formula">
+                        Maximales Übermaß: Ü<sub>max</sub> = es - EI<br>
+                        Minimales Übermaß: Ü<sub>min</sub> = ei - ES
+                    </div>
+                    <p>Für Übermaßpassungen muss Ü<sub>min</sub> ≥ 0 sein.</p>
+                    
+                    <h3>4. Passungstoleranz berechnen</h3>
+                    <div class="formula">
+                        Für Spiel- oder Übermaßpassungen: T<sub>P</sub> = T<sub>Bohrung</sub> + T<sub>Welle</sub><br>
+                        Für Spielpassungen alternativ: T<sub>P</sub> = S<sub>max</sub> - S<sub>min</sub><br>
+                        Für Übermaßpassungen alternativ: T<sub>P</sub> = Ü<sub>max</sub> - Ü<sub>min</sub>
+                    </div>
+                    
+                    <h3>5. Toleranzgrad nach ISO</h3>
+                    <p>Die Toleranzwerte werden nach der Formel berechnet:</p>
+                    <div class="formula">
+                        T = k × i
+                    </div>
+                    <p>Wobei:<br>
+                    i = Toleranzeinheit (in μm)<br>
+                    k = Toleranzfaktor (abhängig vom Toleranzgrad)</p>
+                    
+                    <p>Für Nennmaße bis 500 mm gilt für die Toleranzeinheit:</p>
+                    <div class="formula">
+                        i = 0,45 × ∛D + 0,001 × D
+                    </div>
+                    <p>Wobei D der geometrische Mittelwert des Maβbereiches in mm ist:</p>
+                    <div class="formula">
+                        D = √(D<sub>min</sub> × D<sub>max</sub>)
+                    </div>
+                    
+                    <h3>6. Grundabmaß-Positionen</h3>
+                    <p>Die Lage der Toleranzzone wird durch Buchstaben gekennzeichnet:</p>
+                    <ul>
+                        <li>Für Bohrungen: Großbuchstaben (A, B, C, CD, D, E, EF, F, FG, G, H, JS, J, K, M, N, P, R, S, T, U, V, X, Y, Z, ZA, ZB, ZC)</li>
+                        <li>Für Wellen: Kleinbuchstaben (a, b, c, cd, d, e, ef, f, fg, g, h, js, j, k, m, n, p, r, s, t, u, v, x, y, z, za, zb, zc)</li>
+                    </ul>
+                    
+                    <div class="note">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h3>Hinweis zu H und h</h3>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Wichtig:</strong> H (Bohrung) und h (Welle) haben das Grundabmaß 0. H ist die häufigste Bohrungstoleranz mit unterem Abmaß 0, h ist die häufigste Wellentoleranz mit oberem Abmaß 0.</p>
+                            </div>
+                        </div>
+                    </div>
+            </div>  <!-- card -->
+        </section> <!-- Formula Calculations -->
+    </div> <!-- Card Body -->
+
+    <!-- Card Footer -->
+    <div class="card-footer">
+        <div class="note">
+            <p><strong>Hinweis:</strong> ISO 286-1 behandelt die Grundlagen von Toleranzen, Abmaßen und Passungen, während ISO 286-2 spezifische Tabellen für Toleranzgrade und Abmaße von Wellen und Bohrungen enthält.</p>
+        </div>
+    </div> <!-- Card Footer -->
+
+</div> <!-- card -->

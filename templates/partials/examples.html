@@ -1,0 +1,57 @@
+<div class="card mb-5">
+
+    <div class="card-header py-3">
+        <h5 class="card-title mb-0">Beispiele</h5>
+        <p>Hier können Sie die relevanten Beispiele einsehen und auswählen.</p>
+    </div> <!-- Card Header -->
+
+    <!-- Card Body -->
+    <div class="card-body">
+
+        <div id="error-message" class="alert alert-danger d-none" role="alert">
+            <!-- Fehler werden dynamisch geladen -->
+        </div>
+        <h2>Beispiele für Toleranzangaben</h2>
+        
+        <h3>Beispiel 1: Welle 50h7</h3>
+        <p>Eine Welle mit Nennmaß 50 mm und Toleranzfeld h7:</p>
+        <ul>
+            <li>h: Grundabmaßposition (oberes Abmaß = 0)</li>
+            <li>7: Toleranzgrad IT7</li>
+        </ul>
+        <p>Laut ISO 286-2 Tabellen:<br>
+        Oberes Abmaß es = 0<br>
+        Unteres Abmaß ei = -0,025 mm<br>
+        Toleranz T = 0 - (-0,025) = 0,025 mm</p>
+        
+        <h3>Beispiel 2: Bohrung 50H8</h3>
+        <p>Eine Bohrung mit Nennmaß 50 mm und Toleranzfeld H8:</p>
+        <ul>
+            <li>H: Grundabmaßposition (unteres Abmaß = 0)</li>
+            <li>8: Toleranzgrad IT8</li>
+        </ul>
+        <p>Laut ISO 286-2 Tabellen:<br>
+        Unteres Abmaß EI = 0<br>
+        Oberes Abmaß ES = +0,039 mm<br>
+        Toleranz T = 0,039 - 0 = 0,039 mm</p>
+        
+        <h3>Beispiel 3: Passung 50H8/f7</h3>
+        <p>Eine Spielpassung zwischen Bohrung 50H8 und Welle 50f7:</p>
+        <p>Für Welle 50f7:<br>
+        es = -0,025 mm<br>
+        ei = -0,050 mm</p>
+        <p>Für Bohrung 50H8:<br>
+        ES = +0,039 mm<br>
+        EI = 0 mm</p>
+        <p>Maximales Spiel: S<sub>max</sub> = ES - ei = 0,039 - (-0,050) = 0,089 mm<br>
+        Minimales Spiel: S<sub>min</sub> = EI - es = 0 - (-0,025) = 0,025 mm</p>
+        <p>Passungstoleranz: T<sub>P</sub> = S<sub>max</sub> - S<sub>min</sub> = 0,089 - 0,025 = 0,064 mm<br>
+        oder T<sub>P</sub> = T<sub>Bohrung</sub> + T<sub>Welle</sub> = 0,039 + 0,025 = 0,064 mm</p>
+        <p>Die Passung 50H8/f7 hat also ein maximales Spiel von 0,089 mm, ein minimales Spiel von 0,025 mm und eine Passungstoleranz von 0,064 mm.</p>
+    </div> <!-- Card Body -->
+
+    <!-- Card Footer -->
+    <div class="card-footer">
+    </div> <!-- Card Footer -->
+
+</div> <!-- card -->s

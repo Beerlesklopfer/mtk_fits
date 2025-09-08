@@ -1,0 +1,32 @@
+<div class="card mb-5">
+
+    <div class="card-header py-3">
+        <h5 class="card-title mb-0">Normen</h5>
+    </div>
+
+    <!-- Card Body -->
+    <div class="card-body">
+
+        <div id="error-message" class="alert alert-danger d-none" role="alert">
+            <!-- Fehler werden dynamisch geladen -->
+        </div>
+        <ul class="list-group list-group-flush">
+            {% for standard in standards %}
+            <li class="list-group-item">
+                <h5>{{ standard.title }}</h5>
+                <p>{{ standard.description }}</p>
+                <a href="{{ standard.link }}" target="_blank" class="btn btn-primary">Mehr erfahren</a>
+            </li>
+            {% endfor %}
+            <li class="list-group-item">
+                <h5>Weitere Informationen</h5>
+                <p>Hier finden Sie zusätzliche Ressourcen und Informationen zu den Normen.</p>
+            </li>
+        </ul>
+    </div> <!-- Card Body -->
+
+    <!-- Card Footer -->
+    <div class="card-footer">
+    </div> <!-- Card Footer -->
+
+</div>

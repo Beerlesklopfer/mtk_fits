@@ -1,0 +1,12 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+    <form method="post">{% csrf_token %}
+        <p>
+            <input type="checkbox" name="confirm_purge" value="no">
+            Are you sure you want to permanently purge the selected items? This action cannot be undone.
+        </p>
+        <input type="submit" value="Yes, purge">
+        <a href="{% url 'admin:index' %}" class="button">Cancel</a>
+    </form>
+{% endblock %}

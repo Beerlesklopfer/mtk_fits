@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISO 286 und verwandte Normen</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .description {
+            font-size: 18px;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #ecf0f1;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab:hover {
+            background: #dde4e6;
+        }
+        
+        .tab.active {
+            border-bottom: 3px solid #3498db;
+            background: white;
+            color: #2c3e50;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .control-group h3 {
+            margin-bottom: 12px;
+            color: #2c3e50;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .control-group h3 i {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+        
+        select, input {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            flex: 1;
+            background: white;
+            transition: all 0.3s ease;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        .visualization {
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .canvas-container {
+            width: 100%;
+            overflow-x: auto;
+            margin-bottom: 25px;
+            border: 1px solid #eaeaea;
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        canvas {
+            display: block;
+            background: white;
+        }
+        
+        .info-panel {
+            background: #e8f4fc;
+            border-radius: 10px;
+            padding: 20px;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .info-panel h3 {
+            color: #2980b9;
+            margin-bottom: 15px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .info-panel h3 i {
+            margin-right: 10px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .info-item h4 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .info-item p {
+            color: #7f8c8d;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-right: 15px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border: 1px solid #999;
+            border-radius: 3px;
+        }
+        
+        .norms-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 25px;
+        }
+        
+        .norm-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .norm-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .norm-header {
+            background: #3498db;
+            color: white;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .norm-body {
+            padding: 20px;
+        }
+        
+        .norm-body p {
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .norm-features {
+            list-style-type: none;
+            margin-top: 15px;
+        }
+        
+        .norm-features li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f1f1;
+            display: flex;
+            align-items: center;
+        }
+        
+        .norm-features li i {
+            margin-right: 10px;
+            color: #3498db;
+        }
+        
+        .norm-footer {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: center;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #7f8c8d;
+            font-size: 14px;
+            padding: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .input-row {
+                flex-direction: column;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-ruler-combined"></i> ISO 286 und verwandte Normen</h1>
+            <p class="description">Das ISO-System für Toleranzen und Passungen sowie begleitende Normen der technischen Fertigung</p>
+        </header>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="visualization">Toleranzvisualisierung</div>
+            <div class="tab" data-tab="iso286">ISO 286</div>
+            <div class="tab" data-tab="related">Verwandte Normen</div>
+            <div class="tab" data-tab="application">Anwendung</div>
+        </div>
+        
+        <div class="tab-content active" id="visualization">
+            <div class="controls">
+                <div class="control-group">
+                    <h3><i class="fas fa-ruler"></i> Nennmaß</h3>
+                    <div class="input-row">
+                        <input type="number" id="nominal-size" min="1" max="500" value="50" step="1">
+                        <span style="padding: 12px; background: #f1f1f1; border-radius: 8px;">mm</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3><i class="fas fa-circle"></i> Bohrungstoleranz</h3>
+                    <div class="input-row">
+                        <select id="hole-tolerance">
+                            <option value="H">H (Grundabmaß = 0)</option>
+                            <option value="G">G</option>
+                            <option value="F">F</option>
+                            <option value="E">E</option>
+                            <option value="D">D</option>
+                            <option value="C">C</option>
+                        </select>
+                        <select id="hole-grade">
+                            <option value="IT6">IT6</option>
+                            <option value="IT7" selected>IT7</option>
+                            <option value="IT8">IT8</option>
+                            <option value="IT9">IT9</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3><i class="fas fa-dot-circle"></i> Wellentoleranz</h3>
+                    <div class="input-row">
+                        <select id="shaft-tolerance">
+                            <option value="h" selected>h (Grundabmaß = 0)</option>
+                            <option value="g">g</option>
+                            <option value="f">f</option>
+                            <option value="e">e</option>
+                            <option value="d">d</option>
+                            <option value="c">c</option>
+                        </select>
+                        <select id="shaft-grade">
+                            <option value="IT5">IT5</option>
+                            <option value="IT6" selected>IT6</option>
+                            <option value="IT7">IT7</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="visualization">
+                <div class="canvas-container">
+                    <canvas id="toleranceCanvas" width="1000" height="500"></canvas>
+                </div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #e74c3c;"></div>
+                        <span>Bohrung (Höchstmaß)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #3498db;"></div>
+                        <span>Bohrung (Mindestmaß)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #f39c12;"></div>
+                        <span>Welle (Höchstmaß)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #2ecc71;"></div>
+                        <span>Welle (Mindestmaß)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #9b59b6;"></div>
+                        <span>Nennmaß</span>
+                    </div>
+                </div>
+                
+                <div class="info-panel">
+                    <h3><i class="fas fa-info-circle"></i> Informationen zur Passung</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <h4>Passungsart</h4>
+                            <p id="fit-type">Spielpassung</p>
+                        </div>
+                        <div class="info-item">
+                            <h4>Maximales Spiel</h4>
+                            <p id="max-clearance">0.025 mm</p>
+                        </div>
+                        <div class="info-item">
+                            <h4>Minimales Spiel</h4>
+                            <p id="min-clearance">0.009 mm</p>
+                        </div>
+                        <div class="info-item">
+                            <h4>Passungssystem</h4>
+                            <p id="fit-system">Einheitsbohrung</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="iso286">
+            <div class="info-panel">
+                <h3><i class="fas fa-info-circle"></i> ISO 286 - Das System für Toleranzen und Passungen</h3>
+                <p>Die ISO 286 ist der internationale Standard für die Definition von Toleranzen und Passungen für metallische und nichtmetallische Bauteile. Sie legt die Grundlagen für die Austauschbarkeit von Teilen in der industriellen Fertigung fest.</p>
+                
+                <div class="info-grid" style="margin-top: 20px;">
+                    <div class="info-item">
+                        <h4>Grundprinzip</h4>
+                        <p>Das System basiert auf dem Konzept der Toleranzgrade und Grundabmaße, die zusammen die Toleranzzone definieren.</p>
+                    </div>
+                    <div class="info-item">
+                        <h4>Toleranzgrade</h4>
+                        <p>Von IT01 bis IT16, wobei niedrigere Zahlen engere Toleranzen bedeuten.</p>
+                    </div>
+                    <div class="info-item">
+                        <h4>Grundabmaße</h4>
+                        <p>Für Bohrungen: A-ZC (Großbuchstaben), für Wellen: a-zc (Kleinbuchstaben).</p>
+                    </div>
+                    <div class="info-item">
+                        <h4>Anwendungsbereich</h4>
+                        <p>Für glatte, zylindrische und nicht-zylindrische Bauteile mit Nennmaßen von 0 bis 3150 mm.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="norms-container">
+                <div class="norm-card">
+                    <div class="norm-header">ISO 286-1</div>
+                    <div class="norm-body">
+                        <p>Grundlagen für Toleranzen, Abmaße und Passungen</p>
+                        <ul class="norm-features">
+                            <li><i class="fas fa-check"></i> Definition der Grundbegriffe</li>
+                            <li><i class="fas fa-check"></i> Toleranzklassen und -grade</li>
+                            <li><i class="fas fa-check"></i> Grundlagen der Passsysteme</li>
+                            <li><i class="fas fa-check"></i> Allgemeine Toleranzen</li>
+                        </ul>
+                    </div>
+                    <div class="norm-footer">ISO 286-1:2010</div>
+                </div>
+                
+                <div class="norm-card">
+                    <div class="norm-header">ISO 286-2</div>
+                    <div class="norm-body">
+                        <p>Tabellen der Grundabmaße und Grenzabmaße für Wellen und Bohrungen</p>
+                        <ul class="norm-features">
+                            <li><i class="fas fa-check"></i> Tabellen für Grundabmaße</li>
+                            <li><i class="fas fa-check"></i> Grenzabmaße für ISO-Toleranzklassen</li>
+                            <li><i class="fas fa-check"></i> Berechnungsgrundlagen</li>
+                            <li><i class="fas fa-check"></i> Beispiele für Passungen</li>
+                        </ul>
+                    </div>
+                    <div class="norm-footer">ISO 286-2:2010</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="related">
+            <h3 style="margin: 20px 0; color: #2c3e50;">Wichtige verwandte Normen</h3>
+            
+            <div class="norms-container">
+                <div class="norm-card">
+                    <div class="norm-header">ISO 2768</div>
+                    <div class="norm-body">
+                        <p>Allgemeintoleranzen für Längen- und Winkelmaße</p>
+                        <ul class="norm-features">
+                            <li><i class="fas fa-check"></i> Allgemeintoleranzen für Längenmaße</li>
+                            <li><i class="fas fa-check"></i> Allgemeintoleranzen für Winkelmaße</li>
+                            <li><i class="fas fa-check"></i> Form- und Lagetoleranzen</li>
+                            <li><i class="fas fa-check"></i> Vereinfacht Zeichnungseintragungen</li>
+                        </ul>
+                    </div>
+                    <div class="norm-footer">ISO 2768-1 und ISO 2768-2</div>
+                </div>
+                
+                <div class="norm-card">
+                    <div class="norm-header">ISO 1101</div>
+                    <div class="norm-body">
+                        <p>Geometrische Produktspezifikation (GPS) - Form-, Richtungs-, Orts- und Lauftolerierung</p>
+                        <ul class="norm-features">
+                            <li><i class="fas fa-check"></i> Formtoleranzen</li>
+                            <li><i class="fas fa-check"></i> Lagetoleranzen</li>
+                            <li><i class="fas fa-check"></i> Richtungstoleranzen</li>
+                            <li><i class="fas fa-check"></i> Lauftoleranzen</li>
+                        </ul>
+                    </div>
+                    <div class="norm-footer">ISO 1101:2017</div>
+                </div>
+                
+                <div class="norm-card">
+                    <div class="norm-header">ISO 1302</div>
+                    <div class="norm-body">
+                        <p>Angabe der Oberflächenbeschaffenheit in technischen Produktdokumentationen</p>
+                        <ul class="norm-features">
+                            <li><i class="fas fa-check"></i> Oberflächenkenngrößen</li>
+                            <li><i class="fas fa-check"></i> Symbolik für Oberflächenangaben</li>
+                            <li><i class="fas fa-check"></i> Regeln für die Kennzeichnung</li>
+                            <li><i class="fas fa-check"></i> Beispiele für Oberflächenangaben</li>
+                        </ul>
+                    </div>
+                    <div class="norm-footer">ISO 1302:2002</div>
+                </div>
+                
+                <div class="norm-card">
+                    <div class="norm-header">ISO 8015</div>
+                    <div class="norm-body">
+                        <p>Geometrische Produktspezifikation (GPS) - Grundkonzept der GPS-Normen</p>
+                        <ul class="norm-features">
+                            <li><i class="fas fa-check"></i> Grundprinzipien der GPS</li>
+                            <li><i class="fas fa-check"></i> Konzept der Geometrie</li>
+                            <li><i class="fas fa-check"></i> Prinzip der Unabhängigkeit</li>
+                            <li><i class="fas fa-check"></i> Grundlagen der Tolerierung</li>
+                        </ul>
+                    </div>
+                    <div class="norm-footer">ISO 8015:2011</div>
+                </div>
+                
+                <div class="norm-card">
+                    <div class="norm-header">ISO 14405</div>
+                    <div class="norm-body">
+                        <p>Geometrische Produktspezifikation (GPS) - Tolerierung von Längenmaßen</p>
+                        <ul class="norm-features">
+                            <li><i class="fas fa-check"></i> Tolerierung von Durchmessern</li>
+                            <li><i class="fas fa-check"></i> Tolerierung von linearen Maßen</li>
+                            <li><i class="fas fa-check"></i> Tolerierung mit ± Angaben</li>
+                            <li><i class="fas fa-check"></i> Tolerierung mit Grenzabmaßen</li>
+                        </ul>
+                    </div>
+                    <div class="norm-footer">ISO 14405-1:2016</div>
+                </div>
+                
+                <div class="norm-card">
+                    <div class="norm-header">ISO 2692</div>
+                    <div class="norm-body">
+                        <p>Geometrische Produktspezifikation (GPS) - Maximum-Material-Prinzip (MMP)</p>
+                        <ul class="norm-features">
+                            <li><i class="fas fa-check"></i> Maximum-Material-Bedingung</li>
+                            <li><i class="fas fa-check"></i> Minimum-Material-Bedingung</li>
+                            <li><i class="fas fa-check"></i> Gegenseitigkeitsbedingung</li>
+                            <li><i class="fas fa-check"></i> Anwendung der Materialbedingungen</li>
+                        </ul>
+                    </div>
+                    <div class="norm-footer">ISO 2692:2014</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="application">
+            <div class="info-panel">
+                <h3><i class="fas fa-cogs"></i> Anwendung der ISO-Toleranzsysteme in der Praxis</h3>
+                <p>Die Anwendung der ISO-Toleranzsysteme erfordert ein systematisches Vorgehen und Kenntnis der verschiedenen Normen und deren Zusammenspiel.</p>
+                
+                <div class="info-grid" style="margin-top: 20px;">
+                    <div class="info-item">
+                        <h4>Schritt 1: Auswahl des Passungssystems</h4>
+                        <p>Entscheidung zwischen Einheitsbohrung (System H) oder Einheitswelle (System h) basierend auf Fertigungsanforderungen.</p>
+                    </div>
+                    <div class="info-item">
+                        <h4>Schritt 2: Bestimmung der Passungsart</h4>
+                        <p>Auswahl der gewünschten Passung (Spielpassung, Übergangspassung oder Übermaßpassung) basierend auf der Funktion des Bauteils.</p>
+                    </div>
+                    <div class="info-item">
+                        <h4>Schritt 3: Wahl der Toleranzgrade</h4>
+                        <p>Festlegung der Toleranzgrade für Bohrung und Welle basierend auf den Fertigungsmöglichkeiten und den funktionalen Anforderungen.</p>
+                    </div>
+                    <div class="info-item">
+                        <h4>Schritt 4: Ergänzung mit geometrischen Toleranzen</h4>
+                        <p>Ergänzung der Maßtoleranzen mit Form- und Lagetoleranzen nach ISO 1101, falls erforderlich.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-panel" style="margin-top: 25px;">
+                <h3><i class="fas fa-lightbulb"></i> Praxistipps für die Toleranzauswahl</h3>
+                
+                <div class="info-grid" style="margin-top: 20px;">
+                    <div class="info-item">
+                        <h4>Wirtschaftlichkeit</h4>
+                        <p>So großzügige Toleranzen wie möglich wählen, um Fertigungskosten zu senken.</p>
+                    </div>
+                    <div class="info-item">
+                        <h4>Funktion</h4>
+                        <p>Toleranzen so eng wie nötig wählen, um die Funktionsanforderungen zu erfüllen.</p>
+                    </div>
+                    <div class="info-item">
+                        <h4>Fertigung</h4>
+                        <p>Toleranzen an die verfügbaren Fertigungsverfahren anpassen.</p>
+                    </div>
+                    <div class="info-item">
+                        <h4>Montage</h4>
+                        <p>Montagefreundlichkeit durch geeignete Passungsauswahl berücksichtigen.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Diese Visualisierung und Informationsseite dient Demonstrationszwecken und basiert auf dem ISO 286 System für Toleranzen und Passungen sowie verwandten Normen.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('toleranceCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // UI Elements
+            const nominalSizeInput = document.getElementById('nominal-size');
+            const holeToleranceSelect = document.getElementById('hole-tolerance');
+            const holeGradeSelect = document.getElementById('hole-grade');
+            const shaftToleranceSelect = document.getElementById('shaft-tolerance');
+            const shaftGradeSelect = document.getElementById('shaft-grade');
+            
+            // Info Elements
+            const fitTypeElement = document.getElementById('fit-type');
+            const maxClearanceElement = document.getElementById('max-clearance');
+            const minClearanceElement = document.getElementById('min-clearance');
+            const fitSystemElement = document.getElementById('fit-system');
+            
+            // Tab functionality
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.getAttribute('data-tab');
+                    
+                    // Deactivate all tabs and contents
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    
+                    // Activate current tab and content
+                    tab.classList.add('active');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+            
+            // Initial values
+            let nominalSize = 50;
+            let holeTolerance = 'H';
+            let holeGrade = 'IT7';
+            let shaftTolerance = 'h';
+            let shaftGrade = 'IT6';
+            
+            // Update function
+            function updateVisualization() {
+                nominalSize = parseFloat(nominalSizeInput.value);
+                holeTolerance = holeToleranceSelect.value;
+                holeGrade = holeGradeSelect.value;
+                shaftTolerance = shaftToleranceSelect.value;
+                shaftGrade = shaftGradeSelect.value;
+                
+                drawToleranceChart();
+                updateFitInfo();
+            }
+            
+            // Event listeners
+            nominalSizeInput.addEventListener('input', updateVisualization);
+            holeToleranceSelect.addEventListener('change', updateVisualization);
+            holeGradeSelect.addEventListener('change', updateVisualization);
+            shaftToleranceSelect.addEventListener('change', updateVisualization);
+            shaftGradeSelect.addEventListener('change', updateVisualization);
+            
+            // Calculate tolerance values based on ISO 286
+            function calculateTolerance(size, grade, deviation) {
+                // Simplified calculation for demonstration
+                // In a real application, you would use the complete ISO 286 standard tables
+                
+                // Base tolerance factor based on grade
+                const gradeFactors = {
+                    'IT01': 0.3, 'IT0': 0.5, 'IT1': 0.8, 'IT2': 1.2, 
+                    'IT3': 2, 'IT4': 3, 'IT5': 4, 'IT6': 6, 
+                    'IT7': 10, 'IT8': 14, 'IT9': 25, 'IT10': 40, 
+                    'IT11': 60, 'IT12': 100, 'IT13': 140, 'IT14': 250, 
+                    'IT15': 400, 'IT16': 600
+                };
+                
+                // Deviation factors based on letter
+                const deviationFactors = {
+                    'a': -1.5, 'b': -1.0, 'c': -0.8, 'd': -0.5, 
+                    'e': -0.3, 'f': -0.2, 'g': -0.1, 'h': 0,
+                    'A': 1.5, 'B': 1.0, 'C': 0.8, 'D': 0.5, 
+                    'E': 0.3, 'F': 0.2, 'G': 0.1, 'H': 0
+                };
+                
+                const factor = gradeFactors[grade] || 10;
+                const devFactor = deviationFactors[deviation] || 0;
+                
+                // Calculate tolerance values
+                const tolerance = (size * factor / 100);
+                
+                // Calculate upper and lower deviations
+                let upperDeviation, lowerDeviation;
+                
+                if (deviation === deviation.toUpperCase()) {
+                    // Hole basis
+                    lowerDeviation = devFactor * tolerance / 2;
+                    upperDeviation = lowerDeviation + tolerance;
+                } else {
+                    // Shaft basis
+                    upperDeviation = -devFactor * tolerance / 2;
+                    lowerDeviation = upperDeviation - tolerance;
+                }
+                
+                const maxSize = size + upperDeviation;
+                const minSize = size + lowerDeviation;
+                
+                return {
+                    tolerance,
+                    upperDeviation,
+                    lowerDeviation,
+                    maxSize,
+                    minSize
+                };
+            }
+            
+            // Update fit information
+            function updateFitInfo() {
+                const holeData = calculateTolerance(nominalSize, holeGrade, holeTolerance);
+                const shaftData = calculateTolerance(nominalSize, shaftGrade, shaftTolerance);
+                
+                // Calculate clearance
+                const maxClearance = holeData.maxSize - shaftData.minSize;
+                const minClearance = holeData.minSize - shaftData.maxSize;
+                
+                // Determine fit type
+                let fitType;
+                if (minClearance > 0) {
+                    fitType = "Spielpassung";
+                } else if (maxClearance < 0) {
+                    fitType = "Übermaßpassung";
+                } else {
+                    fitType = "Übergangspassung";
+                }
+                
+                // Determine fit system
+                const fitSystem = holeTolerance === 'H' ? "Einheitsbohrung" : (shaftTolerance === 'h' ? "Einheitswelle" : "Kombiniertes System");
+                
+                // Update UI
+                fitTypeElement.textContent = fitType;
+                maxClearanceElement.textContent = `${maxClearance.toFixed(3)} mm`;
+                minClearanceElement.textContent = `${minClearance.toFixed(3)} mm`;
+                fitSystemElement.textContent = fitSystem;
+            }
+            
+            // Draw the tolerance chart
+            function drawToleranceChart() {
+                const width = canvas.width;
+                const height = canvas.height;
+                const padding = 60;
+                const chartWidth = width - 2 * padding;
+                const chartHeight = height - 2 * padding;
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, width, height);
+                
+                // Calculate tolerance values
+                const holeData = calculateTolerance(nominalSize, holeGrade, holeTolerance);
+                const shaftData = calculateTolerance(nominalSize, shaftGrade, shaftTolerance);
+                
+                // Determine min and max values for scaling
+                const allValues = [
+                    holeData.maxSize, holeData.minSize, 
+                    shaftData.maxSize, shaftData.minSize, 
+                    nominalSize
+                ];
+                
+                const maxValue = Math.max(...allValues) * 1.05;
+                const minValue = Math.min(...allValues) * 0.95;
+                const valueRange = maxValue - minValue;
+                
+                // Calculate scaling factors
+                const scale = chartHeight / valueRange;
+                
+                // Function to calculate Y position from size value
+                const getYPos = (value) => {
+                    return height - padding - (value - minValue) * scale;
+                };
+                
+                // Draw axes
+                ctx.beginPath();
+                ctx.moveTo(padding, padding);
+                ctx.lineTo(padding, height - padding);
+                ctx.lineTo(width - padding, height - padding);
+                ctx.strokeStyle = '#2c3e50';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Draw axis labels
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#2c3e50';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                // X-axis label
+                ctx.fillText('Toleranzzonen', width / 2, height - 20);
+                
+                // Y-axis label
+                ctx.save();
+                ctx.translate(20, height / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText('Maß (mm)', 0, 0);
+                ctx.restore();
+                
+                // Draw grid lines and labels
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                const steps = 5;
+                for (let i = 0; i <= steps; i++) {
+                    const value = minValue + (i / steps) * valueRange;
+                    const y = getYPos(value);
+                    
+                    // Grid line
+                    ctx.beginPath();
+                    ctx.moveTo(padding, y);
+                    ctx.lineTo(width - padding, y);
+                    ctx.strokeStyle = '#ecf0f1';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    
+                    // Label
+                    ctx.fillStyle = '#7f8c8d';
+                    ctx.fillText(value.toFixed(2), padding - 10, y);
+                }
+                
+                // Draw tolerance zones
+                const holeZoneTop = getYPos(holeData.maxSize);
+                const holeZoneBottom = getYPos(holeData.minSize);
+                const shaftZoneTop = getYPos(shaftData.maxSize);
+                const shaftZoneBottom = getYPos(shaftData.minSize);
+                
+                // Draw hole tolerance zone
+                ctx.fillStyle = 'rgba(231, 76, 60, 0.2)';
+                ctx.fillRect(padding + 50, holeZoneTop, 150, holeZoneBottom - holeZoneTop);
+                ctx.strokeStyle = '#e74c3c';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(padding + 50, holeZoneTop, 150, holeZoneBottom - holeZoneTop);
+                
+                // Draw shaft tolerance zone
+                ctx.fillStyle = 'rgba(52, 152, 219, 0.2)';
+                ctx.fillRect(padding + 250, shaftZoneTop, 150, shaftZoneBottom - shaftZoneTop);
+                ctx.strokeStyle = '#3498db';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(padding + 250, shaftZoneTop, 150, shaftZoneBottom - shaftZoneTop);
+                
+                // Draw nominal size line
+                const nominalY = getYPos(nominalSize);
+                ctx.beginPath();
+                ctx.moveTo(padding, nominalY);
+                ctx.lineTo(width - padding, nominalY);
+                ctx.setLineDash([5, 3]);
+                ctx.strokeStyle = '#9b59b6';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Draw labels for tolerance zones
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                
+                // Hole label
+                ctx.fillStyle = '#e74c3c';
+                ctx.fillText(`Bohrung: ${holeTolerance}${holeGrade}`, padding + 125, holeZoneTop - 20);
+                ctx.fillText(`Ø ${holeData.maxSize.toFixed(3)}`, padding + 125, holeZoneTop - 5);
+                ctx.fillText(`Ø ${holeData.minSize.toFixed(3)}`, padding + 125, holeZoneBottom + 15);
+                
+                // Shaft label
+                ctx.fillStyle = '#3498db';
+                ctx.fillText(`Welle: ${shaftTolerance}${shaftGrade}`, padding + 325, shaftZoneTop - 20);
+                ctx.fillText(`Ø ${shaftData.maxSize.toFixed(3)}`, padding + 325, shaftZoneTop - 5);
+                ctx.fillText(`Ø ${shaftData.minSize.toFixed(3)}`, padding + 325, shaftZoneBottom + 15);
+                
+                // Draw nominal size label
+                ctx.fillStyle = '#9b59b6';
+                ctx.fillText(`Nennmaß: Ø ${nominalSize}`, width - 150, nominalY - 15);
+                
+                // Draw tolerance symbols
+                ctx.font = '20px Arial';
+                ctx.fillStyle = '#2c3e50';
+                ctx.fillText("↥", padding + 125, holeZoneTop - 40);
+                ctx.fillText("↧", padding + 125, holeZoneBottom + 35);
+                ctx.fillText("↥", padding + 325, shaftZoneTop - 40);
+                ctx.fillText("↧", padding + 325, shaftZoneBottom + 35);
+                
+                // Draw comparison diagram
+                const comparisonX = padding + 500;
+                const comparisonWidth = 150;
+                
+                // Draw hole in comparison
+                ctx.beginPath();
+                ctx.arc(comparisonX, nominalY, nominalSize/2, 0, Math.PI * 2);
+                ctx.strokeStyle = '#e74c3c';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Draw shaft in comparison
+                ctx.beginPath();
+                ctx.arc(comparisonX, nominalY, nominalSize/2 - 5, 0, Math.PI * 2);
+                ctx.strokeStyle = '#3498db';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Draw clearance
+                const clearance = holeData.minSize - shaftData.maxSize;
+                if (clearance > 0) {
+                    ctx.beginPath();
+                    ctx.arc(comparisonX, nominalY, nominalSize/2 - 2.5, 0, Math.PI * 2);
+                    ctx.setLineDash([2, 2]);
+                    ctx.strokeStyle = '#2ecc71';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    
+                    // Draw clearance indicator
+                    ctx.beginPath();
+                    ctx.moveTo(comparisonX + nominalSize/2 + 5, nominalY);
+                    ctx.lineTo(comparisonX + nominalSize/2 + 20, nominalY);
+                    ctx.strokeStyle = '#2c3e50';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(comparisonX + nominalSize/2 + 5, nominalY - 10);
+                    ctx.lineTo(comparisonX + nominalSize/2 + 5, nominalY + 10);
+                    ctx.stroke();
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(comparisonX + nominalSize/2 + 20, nominalY - 10);
+                    ctx.lineTo(comparisonX + nominalSize/2 + 20, nominalY + 10);
+                    ctx.stroke();
+                    
+                    ctx.font = '12px Arial';
+                    ctx.fillStyle = '#2c3e50';
+                    ctx.fillText(`Spiel: ${clearance.toFixed(3)}mm`, comparisonX + nominalSize/2 + 40, nominalY);
+                }
+                
+                // Draw title
+                ctx.font = 'bold 20px Arial';
+                ctx.fillStyle = '#2c3e50';
+                ctx.textAlign = 'center';
+                ctx.fillText('ISO 286 Toleranzen und Passungen', width / 2, 30);
+            }
+            
+            // Initial draw
+            updateVisualization();
+        });
+    </script>
+</body>
+</html>

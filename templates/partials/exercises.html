@@ -1,0 +1,479 @@
+<div class="card mb-5">
+
+    <div class="card-header py-3">
+        <h5 class="card-title mb-0">Übungen</h5>
+        <p>Hier können Sie die relevanten Übungen einsehen und auswählen.</p>
+    </div>
+
+    <!-- Card Body -->
+    <div class="card-body">
+
+        <div id="error-message" class="alert alert-danger d-none" role="alert">
+            <!-- Fehler werden dynamisch geladen -->
+        </div>
+
+
+    <div class="header text-center">
+        <div class="container">
+            <h1 class="display-4"><i class="fas fa-ruler-combined me-3"></i>ISO 286 Toleranzen</h1>
+            <p class="lead">Übungsaufgaben zu Toleranzen und Passungen</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="instructions">
+            <h3><i class="fas fa-info-circle me-2"></i>Anleitung</h3>
+            <p>Lösen Sie die folgenden Übungsaufgaben zum Thema ISO 286 Toleranzen. Zwei Drittel der Aufgaben behandeln Übermaßpassungen. Klicken Sie auf "Lösung anzeigen", um Ihre Antwort zu überprüfen.</p>
+            <p class="mb-0"><strong>Hinweis:</strong> Die Lösungen basieren auf den ISO 286 Standardtabellen.</p>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-12">
+                <!-- Exercise 1 -->
+                <div class="card exercise-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Aufgabe 1 <span class="topic-badge">Übermaßpassung</span></span>
+                        <span class="badge bg-warning">Schwierigkeit: Mittel</span>
+                    </div>
+                    <div class="card-body">
+                        <p>Bestimmen Sie die Toleranzwerte für eine Übermaßpassung mit der Bezeichnung <strong>H7/u6</strong> für ein Nennmaß von 50 mm.</p>
+                        <button class="btn btn-solution" type="button" data-bs-toggle="collapse" data-bs-target="#solution1">
+                            Lösung anzeigen <i class="fas fa-chevron-down ms-2"></i>
+                        </button>
+                        <div class="collapse mt-3" id="solution1">
+                            <div class="solution">
+                                <p>Für H7/u6 mit Nennmaß 50 mm:</p>
+                                <table class="table table-bordered table-custom">
+                                    <thead>
+                                        <tr>
+                                            <th>Bezeichnung</th>
+                                            <th>Oberes Abmaß (μm)</th>
+                                            <th>Unteres Abmaß (μm)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Bohrung H7</td>
+                                            <td>+25</td>
+                                            <td>0</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Welle u6</td>
+                                            <td>+86</td>
+                                            <td>+70</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <p class="mb-0">Übermaß: min. 45 μm, max. 86 μm</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exercise 2 -->
+                <div class="card exercise-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Aufgabe 2 <span class="topic-badge">Spielpassung</span></span>
+                        <span class="badge bg-success">Schwierigkeit: Leicht</span>
+                    </div>
+                    <div class="card-body">
+                        <p>Bestimmen Sie die Passungsart und die Toleranzen für <strong>H7/g6</strong> bei einem Nennmaß von 30 mm.</p>
+                        <button class="btn btn-solution" type="button" data-bs-toggle="collapse" data-bs-target="#solution2">
+                            Lösung anzeigen <i class="fas fa-chevron-down ms-2"></i>
+                        </button>
+                        <div class="collapse mt-3" id="solution2">
+                            <div class="solution">
+                                <p>Für H7/g6 mit Nennmaß 30 mm:</p>
+                                <table class="table table-bordered table-custom">
+                                    <thead>
+                                        <tr>
+                                            <th>Bezeichnung</th>
+                                            <th>Oberes Abmaß (μm)</th>
+                                            <th>Unteres Abmaß (μm)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Bohrung H7</td>
+                                            <td>+21</td>
+                                            <td>0</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Welle g6</td>
+                                            <td>-7</td>
+                                            <td>-20</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <p class="mb-0">Spiel: min. 7 μm, max. 41 μm (Spielpassung)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exercise 3 -->
+                <div class="card exercise-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Aufgabe 3 <span class="topic-badge">Übermaßpassung</span></span>
+                        <span class="badge bg-danger">Schwierigkeit: Hoch</span>
+                    </div>
+                    <div class="card-body">
+                        <p>Für eine Preßpassung mit einem Nennmaß von 80 mm wird ein Übermaß von 50 μm bis 120 μm benötigt. Wählen Sie ein geeignetes Passungspaar aus.</p>
+                        <button class="btn btn-solution" type="button" data-bs-toggle="collapse" data-bs-target="#solution3">
+                            Lösung anzeigen <i class="fas fa-chevron-down ms-2"></i>
+                        </button>
+                        <div class="collapse mt-3" id="solution3">
+                            <div class="solution">
+                                <p>Für eine Preßpassung mit 80 mm Nennmaß und gefordertem Übermaß von 50-120 μm eignet sich:</p>
+                                <p><strong>H7/s6</strong></p>
+                                <table class="table table-bordered table-custom">
+                                    <thead>
+                                        <tr>
+                                            <th>Bezeichnung</th>
+                                            <th>Oberes Abmaß (μm)</th>
+                                            <th>Unteres Abmaß (μm)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Bohrung H7</td>
+                                            <td>+30</td>
+                                            <td>0</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Welle s6</td>
+                                            <td>+93</td>
+                                            <td>+71</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <p class="mb-0">Übermaß: min. 41 μm, max. 123 μm (erfüllt die Anforderungen)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exercise 4 -->
+                <div class="card exercise-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Aufgabe 4 <span class="topic-badge">Übermaßpassung</span></span>
+                        <span class="badge bg-warning">Schwierigkeit: Mittel</span>
+                    </div>
+                    <div class="card-body">
+                        <p>Berechnen Sie das minimale und maximale Übermaß für die Passung <strong>H7/p6</strong> bei einem Nennmaß von 40 mm.</p>
+                        <button class="btn btn-solution" type="button" data-bs-toggle="collapse" data-bs-target="#solution4">
+                            Lösung anzeigen <i class="fas fa-chevron-down ms-2"></i>
+                        </button>
+                        <div class="collapse mt-3" id="solution4">
+                            <div class="solution">
+                                <p>Für H7/p6 mit Nennmaß 40 mm:</p>
+                                <table class="table table-bordered table-custom">
+                                    <thead>
+                                        <tr>
+                                            <th>Bezeichnung</th>
+                                            <th>Oberes Abmaß (μm)</th>
+                                            <th>Unteres Abmaß (μm)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Bohrung H7</td>
+                                            <td>+25</td>
+                                            <td>0</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Welle p6</td>
+                                            <td>+42</td>
+                                            <td>+26</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <p class="mb-0">Übermaß: min. 1 μm, max. 42 μm (leichte Übermaßpassung)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exercise 5 -->
+                <div class="card exercise-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Aufgabe 5 <span class="topic-badge">Übergangspassung</span></span>
+                        <span class="badge bg-success">Schwierigkeit: Leicht</span>
+                    </div>
+                    <div class="card-body">
+                        <p>Bestimmen Sie die Art der Passung und die Toleranzen für <strong>H7/js6</strong> bei einem Nennmaß von 25 mm.</p>
+                        <button class="btn btn-solution" type="button" data-bs-toggle="collapse" data-bs-target="#solution5">
+                            Lösung anzeigen <i class="fas fa-chevron-down ms-2"></i>
+                        </button>
+                        <div class="collapse mt-3" id="solution5">
+                            <div class="solution">
+                                <p>Für H7/js6 mit Nennmaß 25 mm:</p>
+                                <table class="table table-bordered table-custom">
+                                    <thead>
+                                        <tr>
+                                            <th>Bezeichnung</th>
+                                            <th>Oberes Abmaß (μm)</th>
+                                            <th>Unteres Abmaß (μm)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Bohrung H7</td>
+                                            <td>+21</td>
+                                            <td>0</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Welle js6</td>
+                                            <td>+8</td>
+                                            <td>-8</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <p class="mb-0">Spiel/Übermaß: min. -8 μm (Übermaß), max. +29 μm (Spiel) → Übergangspassung</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weitere Aufgaben würden hier folgen -->
+                
+                <!-- Exercise 6 -->
+                <div class="card exercise-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Aufgabe 6 <span class="topic-badge">Übermaßpassung</span></span>
+                        <span class="badge bg-warning">Schwierigkeit: Mittel</span>
+                    </div>
+                    <div class="card-body">
+                        <p>Für eine feste Pressverbindung mit 60 mm Nennmaß wird eine Passung mit einem Übermaß von 30-80 μm benötigt. Wählen Sie eine geeignete Passung aus.</p>
+                        <button class="btn btn-solution" type="button" data-bs-toggle="collapse" data-bs-target="#solution6">
+                            Lösung anzeigen <i class="fas fa-chevron-down ms-2"></i>
+                        </button>
+                        <div class="collapse mt-3" id="solution6">
+                            <div class="solution">
+                                <p>Für eine Pressverbindung mit 60 mm Nennmaß und gefordertem Übermaß von 30-80 μm eignet sich:</p>
+                                <p><strong>H7/r6</strong></p>
+                                <table class="table table-bordered table-custom">
+                                    <thead>
+                                        <tr>
+                                            <th>Bezeichnung</th>
+                                            <th>Oberes Abmaß (μm)</th>
+                                            <th>Unteres Abmaß (μm)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Bohrung H7</td>
+                                            <td>+30</td>
+                                            <td>0</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Welle r6</td>
+                                            <td>+61</td>
+                                            <td>+41</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <p class="mb-0">Übermaß: min. 11 μm, max. 61 μm (erfüllt die Anforderungen)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exercise 7 -->
+                <div class="card exercise-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Aufgabe 7 <span class="topic-badge">Übermaßpassung</span></span>
+                        <span class="badge bg-danger">Schwierigkeit: Hoch</span>
+                    </div>
+                    <div class="card-body">
+                        <p>Eine Welle mit 100 mm Durchmesser soll in ein Gehäuse gepresst werden. Das maximale Übermaß soll 150 μm nicht überschreiten, das minimale Übermaß soll mindestens 60 μm betragen. Wählen Sie eine passende ISO-Passung.</p>
+                        <button class="btn btn-solution" type="button" data-bs-toggle="collapse" data-bs-target="#solution7">
+                            Lösung anzeigen <i class="fas fa-chevron-down ms-2"></i>
+                        </button>
+                        <div class="collapse mt-3" id="solution7">
+                            <div class="solution">
+                                <p>Für 100 mm Nennmaß und gefordertem Übermaß von 60-150 μm eignet sich:</p>
+                                <p><strong>H7/u6</strong></p>
+                                <table class="table table-bordered table-custom">
+                                    <thead>
+                                        <tr>
+                                            <th>Bezeichnung</th>
+                                            <th>Oberes Abmaß (μm)</th>
+                                            <th>Unteres Abmaß (μm)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Bohrung H7</td>
+                                            <td>+35</td>
+                                            <td>0</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Welle u6</td>
+                                            <td>+166</td>
+                                            <td>+144</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <p class="mb-0">Übermaß: min. 109 μm, max. 166 μm (erfüllt die Anforderungen)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exercise 8 -->
+                <div class="card exercise-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Aufgabe 8 <span class="topic-badge">Spielpassung</span></span>
+                        <span class="badge bg-success">Schwierigkeit: Leicht</span>
+                    </div>
+                    <div class="card-body">
+                        <p>Bestimmen Sie die Toleranzen für eine leichtgängige Spielpassung <strong>H8/e8</strong> bei einem Nennmaß von 45 mm.</p>
+                        <button class="btn btn-solution" type="button" data-bs-toggle="collapse" data-bs-target="#solution8">
+                            Lösung anzeigen <i class="fas fa-chevron-down ms-2"></i>
+                        </button>
+                        <div class="collapse mt-3" id="solution8">
+                            <div class="solution">
+                                <p>Für H8/e8 mit Nennmaß 45 mm:</p>
+                                <table class="table table-bordered table-custom">
+                                    <thead>
+                                        <tr>
+                                            <th>Bezeichnung</th>
+                                            <th>Oberes Abmaß (μm)</th>
+                                            <th>Unteres Abmaß (μm)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Bohrung H8</td>
+                                            <td>+39</td>
+                                            <td>0</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Welle e8</td>
+                                            <td>-50</td>
+                                            <td>-89</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <p class="mb-0">Spiel: min. 50 μm, max. 128 μm (Spielpassung)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exercise 9 -->
+                <div class="card exercise-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Aufgabe 9 <span class="topic-badge">Übermaßpassung</span></span>
+                        <span class="badge bg-warning">Schwierigkeit: Mittel</span>
+                    </div>
+                    <div class="card-body">
+                        <p>Für eine Preßverbindung mit 70 mm Nennmaß wurde die Passung H7/s6 gewählt. Berechnen Sie das minimale und maximale Übermaß.</p>
+                        <button class="btn btn-solution" type="button" data-bs-toggle="collapse" data-bs-target="#solution9">
+                            Lösung anzeigen <i class="fas fa-chevron-down ms-2"></i>
+                        </button>
+                        <div class="collapse mt-3" id="solution9">
+                            <div class="solution">
+                                <p>Für H7/s6 mit Nennmaß 70 mm:</p>
+                                <table class="table table-bordered table-custom">
+                                    <thead>
+                                        <tr>
+                                            <th>Bezeichnung</th>
+                                            <th>Oberes Abmaß (μm)</th>
+                                            <th>Unteres Abmaß (μm)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Bohrung H7</td>
+                                            <td>+30</td>
+                                            <td>0</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Welle s6</td>
+                                            <td>+93</td>
+                                            <td>+71</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <p class="mb-0">Übermaß: min. 41 μm, max. 93 μm</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exercise 10 -->
+                <div class="card exercise-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Aufgabe 10 <span class="topic-badge">Übermaßpassung</span></span>
+                        <span class="badge bg-danger">Schwierigkeit: Hoch</span>
+                    </div>
+                    <div class="card-body">
+                        <p>Für eine Schrumpfverbindung mit 90 mm Nennmaß wird ein Übermaß von mindestens 100 μm benötigt. Das maximale Übermaß soll 180 μm nicht überschreiten. Wählen Sie eine geeignete Passung.</p>
+                        <button class="btn btn-solution" type="button" data-bs-toggle="collapse" data-bs-target="#solution10">
+                            Lösung anzeigen <i class="fas fa-chevron-down ms-2"></i>
+                        </button>
+                        <div class="collapse mt-3" id="solution10">
+                            <div class="solution">
+                                <p>Für 90 mm Nennmaß und gefordertem Übermaß von 100-180 μm eignet sich:</p>
+                                <p><strong>H7/u6</strong></p>
+                                <table class="table table-bordered table-custom">
+                                    <thead>
+                                        <tr>
+                                            <th>Bezeichnung</th>
+                                            <th>Oberes Abmaß (μm)</th>
+                                            <th>Unteres Abmaß (μm)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Bohrung H7</td>
+                                            <td>+35</td>
+                                            <td>0</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Welle u6</td>
+                                            <td>+166</td>
+                                            <td>+144</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <p class="mb-0">Übermaß: min. 109 μm, max. 166 μm (erfüllt die Anforderungen)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weitere Aufgaben (11-20) würden hier folgen -->
+
+            </div>
+        </div>
+
+        {% if current_page > 1 %}
+        <div class="d-flex justify-content-center mt-4">
+            <nav aria-label="Page navigation">
+                <ul class="pagination">
+                    <li class="page-item disabled"><a class="page-link" href="#">Zurück</a></li>
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">Weiter</a></li>
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="footer text-center">
+        <div class="container">
+            <p class="mb-0">ISO 286 Toleranzen - Übungsaufgaben | Erstellt für Ausbildung und Training</p>
+        </div>
+    </div>
+
+    </div> <!-- Card Body -->
+
+    <!-- Card Footer -->
+    <div class="card-footer">
+    </div> <!-- Card Footer -->
+
+</div>

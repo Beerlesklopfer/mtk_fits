@@ -1,0 +1,82 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static %}
+
+{% block object-tools %}
+    <div class="object-tools">
+        {% block object-tools-items %}
+            {{ block.super }}
+            <a href="pastebin/" class="addlink">
+                <i class="fas fa-paste"></i> Pastebin
+            </a>
+            <a href="import-iso/" class="addlink">
+                <i class="fas fa-file-import"></i> Import ISO286 Tolerances
+            </a>
+            <a href="export-template/" class="addlink">
+                <i class="fas fa-file-download"></i> Export Template
+            </a>
+        {% endblock %}
+    </div>
+    
+    <div style="margin: 20px 0; padding: 15px; background: #f8f8f8; border: 1px solid #ddd;">
+        <h3>Filter Tolerances</h3>
+        <form method="get" style="display: flex; gap: 15px; align-items: end;">
+            <div>
+                <label for="nominal_size_min" style="display: block; font-weight: bold; margin-bottom: 5px;">Untere Nominalgrenze [mm]</label>
+                <input type="number" name="nominal_size_min" id="nominal_size_min" value="{{ request.GET.nominal_size_min }}" 
+                       style="padding: 5px; width: 120px;" placeholder="Min size">
+            </div>
+            <div>
+                <label for="nominal_size_max" style="display: block; font-weight: bold; margin-bottom: 5px;">Obere Nominalgrenze [mm]</label>
+                <input type="number" name="nominal_size_max" id="nominal_size_max" value="{{ request.GET.nominal_size_max }}" 
+                       style="padding: 5px; width: 120px;" placeholder="Max size">
+            </div>
+            <div>
+                <label for="tolerance_class" style="display: block; font-weight: bold; margin-bottom: 5px;">Toleranzklasse</label>
+                <select name="tolerance_class" id="tolerance_class" style="padding: 5px; width: 150px;">
+                    <option value="">Alle Klassen</option>
+                    {% for class in tolerance_classes %}
+                        <option value="{{ class }}" {% if request.GET.tolerance_class == class %}selected{% endif %}>
+                            {{ class }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <button type="submit" style="padding: 6px 12px; background: #417690; color: white; border: none; cursor: pointer;">
+                    Filter
+                </button>
+                <a href="?" style="padding: 6px 12px; background: #999; color: white; text-decoration: none; display: inline-block;">
+                    Clear
+                </a>
+            </div>
+        </form>
+    </div>
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .object-tools {
+            margin-bottom: 15px;
+        }
+        .object-tools .addlink {
+            background: #417690;
+            padding: 8px 12px;
+            border-radius: 4px;
+            color: white;
+            text-decoration: none;
+            margin-left: 10px;
+        }
+        .object-tools .addlink:hover {
+            background: #205067;
+        }
+        .object-tools .addlink i {
+            margin-right: 5px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+{% endblock %}
