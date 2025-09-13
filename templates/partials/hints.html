@@ -1,3 +1,38 @@
+<!-- Partial template for ISO 286 hints -->
+{% block extra_css %}
+<style>
+    .definition {
+        margin-bottom: 10px;
+    }
+    .term {
+        color: #2c3e50;
+    }
+    .cite {
+        font-style: italic;
+        color: #7f8c8d;
+    }
+    .formula {
+        background-color: #ecf0f1;
+        border-left: 4px solid #3498db;
+        padding: 10px;
+        margin: 10px 0;
+        font-family: 'Courier New', Courier, monospace;
+    }
+    .example {
+        background-color: #dff9fb;
+        border-left: 4px solid #22a6b3;
+        padding: 10px;
+        margin: 10px 0;
+    }
+    .note {
+        background-color: #f1c40f1a;
+        border-left: 4px solid #f39c12;
+        padding: 10px;
+        margin: 10px 0;
+    }
+</style>
+{% endblock %}
+
 <div class="card mb-5">
 
     <div id="error-message" class="alert alert-danger d-none" role="alert">
@@ -30,55 +65,79 @@
                     <h2>Grundbegriffe und Definitionen</h2>
                 </div>
             </div>
+            Diese Begriffe sind grundlegend für das Verständnis von Toleranzen und Passungen. Es sei auf den Abschnitt 3.2, 3.3 in ISO 286-1:2019-09 verwiesen. Anmerkung: <span class="cite">Mit dieser Hervorhebung werden Zitate kenntlich gemacht.</span>
+            <br><br>
             <div class="card mb-3" id="iso286DefinitionsBody">
                 <div class="card-body">
                     <div class="definition">
-                        <p><span class="term">Nennmaß (Nominalmaß)</span>: Das Maß, von dem die Grenzmaße durch die Abmaße abgeleitet werden. Es dient als Bezugsmaß für alle Abweichungen.</p>
+                        <p>3.2.1 <span class="term fw-bold">Nennmaß (Nominalmaß)</span>: <span class="cite">Maß eines Geometrieelementes perfekter Form wie durch die Spezifikation der Zeichnung festgelegt</span></p>
                     </div>
                     <div class="definition">
-                        <p><span class="term">Istmaß</span>: Durch Messung ermitteltes Maß an einem gefertigten Bauteil.</p>
+                        <p>3.2.2 <span class="term fw-bold">Istmaß</span>: <span class="cite">Maß des zugeordneten vollständigen Geometrieelements.</span> Durch Messung ermitteltes Maß an einem gefertigten Bauteil.</p>
                     </div>
                     <div class="definition">
-                        <p><span class="term">Grenzmaß</span>: Das maximal bzw. minimal zulässige Maß eines Bauteils.</p>
+                        <p>3.2.3 <span class="term fw-bold">Grenzmaß</span>: <span class="cite">kleinstes und größtes zulässiges Maß eines Geometrieelementes</span> Das maximal bzw. minimal zulässige Maß eines Bauteils.</p>
                     </div>
                     <div class="definition">
-                        <p><span class="term">Oberes Grenzmaß (Gö)</span>: Das größte zulässige Maß eines Bauteils.</p>
+                        <p>3.2.3.1 <span class="term fw-bold">Höchstmaß (ULS)</span>: Das größte zulässige Maß eines Bauteils.</p>
                     </div>
                     <div class="definition">
-                        <p><span class="term">Unteres Grenzmaß (Gu)</span>: Das kleinste zulässige Maß eines Bauteils.</p>
+                        <p>3.2.3.2 <span class="term fw-bold">Mindestmaß (LLS)</span>: Das kleinste zulässige Maß eines Bauteils.</p>
                     </div>
                     <div class="definition">
-                        <p><span class="term">Abmaß</span>: Die Differenz zwischen einem Grenzmaß und dem Nennmaß.</p>
+                        <p>3.2.4 <span class="term fw-bold">Abmaß</span>: <span class="cite">Wert minus seines tatsächlichen Bezugswertes</span>Die Differenz zwischen einem Grenzmaß und dem Nennmaß.</p>
                     </div>
                     <div class="definition">
-                        <p><span class="term">Oberes Abmaß (es für Wellen, ES für Bohrungen)</span>: Differenz zwischen oberem Grenzmaß und Nennmaß.</p>
+                        <p>3.2.5.1 <span class="term fw-bold">Oberes Grenzabmaß (es für Wellen, ES für Bohrungen)</span>: <span class="cite">Höchstmaß minus Nennmaß</span>Differenz zwischen oberem Grenzmaß und Nennmaß.</p>
                     </div>
                     <div class="definition">
-                        <p><span class="term">Unteres Abmaß (ei für Wellen, EI für Bohrungen)</span>: Differenz zwischen unterem Grenzmaß und Nennmaß.</p>
+                        <p>3.2.5.2 <span class="term fw-bold">Unteres Grenzabmaß (ei für Wellen, EI für Bohrungen)</span>: <span class="cite">Mindestmaß minus Nennmaß</span>Differenz zwischen unterem Grenzmaß und Nennmaß.</p>
                     </div>
                     <div class="definition">
-                        <p><span class="term">Toleranz</span>: Differenz zwischen oberem und unterem Grenzmaß. Sie gibt die zulässige Maßabweichung an.</p>
+                        <p>3.2.8 <span class="term fw-bold">Toleranz (T)</span>: <span class="cite">Differenz zwischen Höchstmaß und Mindestmaß</span>Differenz zwischen oberem und unterem Grenzabmaß. Sie gibt die zulässige absolute Maßabweichung an.</span></p>
                     </div>
                     <div class="definition">
-                        <p><span class="term">Toleranzzone</span>: Zone zwischen den beiden Grenzmaßen, begrenzt durch das obere und untere Abmaß.</p>
+                        <p>3.2.8.1 <span class="term fw-bold">Toleranzgrenze</span>: <span class="cite">vorgegebene Merkmalswerte, die die untere und/oder obere Grenze für den zulässigen Wert darstellen</span>Zone zwischen den beiden Grenzmaßen, begrenzt durch das obere und untere Abmaß.</p>
                     </div>
                     <div class="definition">
-                        <p><span class="term">Passung</span>: Beziehung zwischen zwei gepaarten Bauteilen (typischerweise Welle und Bohrung) aufgrund der Maßunterschiede vor der Montage.</p>
+                        <p><span class="term fw-bold">Passung</span>: <span class="cite"></span>Beziehung zwischen zwei gepaarten Bauteilen (typischerweise Welle und Bohrung) aufgrund der Maßunterschiede vor der Montage.</p>
                     </div>
                     <div class="definition">
-                        <p><span class="term">Spielpassung</span>: Immer positive Maßdifferenz zwischen Bohrung und Welle.</p>
+                        <p>3.3.1 <span class="term fw-bold">Spiel</span>: <span class="cite">Differenz zwischen den Maßen der Bohrung und der Welle, wenn der Durchmesser der Welle kleiner ist als 
+der Durchmesser der Bohrung</span>Immer positive Maßdifferenz zwischen Bohrung und Welle.</p>
                     </div>
                     <div class="definition">
-                        <p><span class="term">Übermaßpassung</span>: Immer negative Maßdifferenz zwischen Bohrung und Welle.</p>
+                        <p>3.3.1.1 <span class="term fw-bold">Mindestspiel</span>: <span class="cite"><bei einer Spielpassung> Differenz zwischen dem Mindestmaß der Bohrung und dem Höchstmaß der Welle </span>Immer positive Maßdifferenz zwischen Bohrung und Welle.</p>
                     </div>
                     <div class="definition">
-                        <p><span class="term">Übergangspassung</span>: Passung, bei der je Istmaß der Bauteile entweder Spiel oder Übermaß auftreten kann.</p>
+                        <p>3.3.1.2 <span class="term fw-bold">Höchstspiel </span>: <span class="cite"><bei einer Spiel- oder Übergangspassung> Differenz zwischen dem Höchstmaß der Bohrung und dem 
+Mindestmaß der Welle</span> Immer positive Maßdifferenz zwischen Bohrung und Welle.</p>
                     </div>
                     <div class="definition">
-                        <p><span class="term">Internationale Toleranzgrad (IT)</span>: Gruppe von Toleranzen, die bei gleichem Toleranzgrad IT für alle Nennmaße ähnliche relative Fertigungsgenauigkeiten bedingen.</p>
+                        <p>3.3.2<span class="term fw-bold">Übermaß</span>: <span class="cite"> Differenz zwischen den Maßen der Bohrung und der Welle vor dem Fügen, wenn der Durchmesser der Welle 
+größer ist als der Durchmesser der Bohrung </span>Immer negative Maßdifferenz zwischen Bohrung und Welle. Für Mindestübermaß und Höchstübermaß vgl. Spiel.</p>
                     </div>
                     <div class="definition">
-                        <p><span class="term">Grundabmaß</span>: Das dem Nennmaß nächstgelegene Abmaß einer Toleranzzone. Es bestimmt die Lage der Toleranzzone relativ zum Nennmaß.</p>
+                        <p>3.3.3 <span class="term fw-bold">Passung</span>: <span class="cite">Zusammenhang zwischen einem äußeren und einem inneren Geometrieelement (Bohrung und Welle der 
+gleichen Art), die zusammengefügt werden</span> Passung, bei der je Istmaß der Bauteile entweder Spiel oder Übermaß auftreten kann.</p>
+                    </div>
+                    <div class="definition">
+                        <p>3.3.3.1 <span class="term fw-bold">Spielpassung</span>: <span class="cite">Passung, bei der beim Zusammenbau von Bohrung und Welle immer ein Spiel entsteht, d. h. das Mindestmaß 
+der Bohrung ist größer als oder im Grenzfall gleich dem Höchstmaß der Welle</span> Passung, bei der je Istmaß der Bauteile entweder Spiel oder Übermaß auftreten kann.</p>
+                    </div>
+                    <div class="definition">
+                        <p>3.3.3.2 <span class="term fw-bold">Übermaßpassung</span>: <span class="cite">Passung, bei der beim Zusammenbau von Bohrung und Welle immer ein Übermaß entsteht, d. h. das 
+Höchstmaß der Bohrung ist kleiner als oder im Grenzfall gleich dem Mindestmaß der Welle</span> Umganssprachlich: Presspassung</p>
+                    </div>
+                    <div class="definition">
+                        <p>3.3.3.3<span class="term fw-bold">Übergangspassung</span>: <span class="cite">Passung, bei der beim Zusammenbau von Bohrung und Welle entweder ein Spiel oder ein Übermaß entsteht</span></p>
+                    </div>
+                    <div class="definition">
+                        <p>3.2.8.2<span class="term fw-bold">Grundtoleranz (IT)</span>: Gruppe von Toleranzen, die bei gleichem Toleranzgrad IT für alle Nennmaße ähnliche relative Fertigungsgenauigkeiten bedingen.</p>
+                    </div>
+                    <div class="definition">
+                        <p>4.1.2.5 <span class="term fw-bold">Grundabmaß</span>: <span class="cite">Das Grundabmaß ist das Grenzabmaß, welches das Grenzmaß festlegt, das dem Nennmaß am nächsten 
+kommt</span>Das dem Nennmaß nächstgelegene Abmaß einer Toleranzzone. Es bestimmt die Lage der Toleranzzone relativ zum Nennmaß.</p>
                     </div>
                 </div> <!-- Card Body -->
             </div> <!-- Card -->
@@ -92,13 +151,13 @@
                 <div class="card-body" id="iso286FormulasBody">
                     <h3>1. Toleranz berechnen</h3>
                     <div class="formula">
-                        T = Gö - Gu = ES - EI (für Bohrungen)<br>
-                        T = Gö - Gu = es - ei (für Wellen)
+                        T = ULS - LLS = ES - EI (für Bohrungen)<br>
+                        T = ULS - LLS = es - ei (für Wellen)
                     </div>
                     <p>Wobei:<br>
                     T = Toleranz<br>
-                    Gö = Oberes Grenzmaß<br>
-                    Gu = Unteres Grenzmaß<br>
+                    ULS = Oberes Grenzmaß<br>
+                    LLS = Unteres Grenzmaß<br>
                     ES = Oberes Abmaß der Bohrung<br>
                     EI = Unteres Abmaß der Bohrung<br>
                     es = Oberes Abmaß der Welle<br>

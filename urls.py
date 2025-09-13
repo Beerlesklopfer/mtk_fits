@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-import utils.sheets as sheet_names
+import main.sheets as sheet_names
 
 app_name = 'fits'
 

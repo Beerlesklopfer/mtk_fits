@@ -5,13 +5,14 @@ from django.shortcuts import render, redirect
 from django.urls import path
 from django.http import HttpResponse
 from django.contrib import messages
-from .models import ISOTolerance, ISOToleranceClass
 from django.utils.html import format_html
 from django.urls import reverse
 import pandas as pd
 from io import BytesIO
+from .models import ISOToleranceITClass, ISOToleranceClass
+from .constants import TOLERANCE_CLASSES
 from django.utils import timezone
-from utils.models import Standards
+from main.models import Standards
 import re
 
 # class ImportExcelForm(forms.Form):
@@ -35,12 +36,48 @@ class StandardsAdmin(admin.ModelAdmin):
     list_display = ('__str__', 'app_name', 'title', 'category', 'description', 'link')
     search_fields = ('title', 'description')
     
-@admin.register(ISOTolerance)
-class ISOTolerance(admin.ModelAdmin):
+@admin.register(ISOToleranceITClass)
+class ISOToleranceITClassAdmin(admin.ModelAdmin):
     list_display = ('__str__',  'nominal_size_min', 'nominal_size_max', 'tolerance_class', 'tolerance_value', 'description')
-    list_filter = ('tolerance_class',)
+    list_filter = ('tolerance_class', 'standards')
     search_fields = ('tolerance_class', 'tolerance_value')
     ordering = ('tolerance_class', 'nominal_size_min', 'nominal_size_max')
+    actions = ['import_from_excel']
+    change_list_template = 'admin/ittolerances.html'
+    required_columns = dict(
+            nominal_size_min  = 'Nennmaß min [mm]',
+            nominal_size_max  = 'Nennmaß max [mm]',
+            tolerance_class   = 'Toleranzklasse',
+            tolerance_value   = 'Grenzmaß [µm]',
+            description       = 'Beschreibung (optional)',
+        )
+        
+    def changelist_view(self, request, extra_context=None):
+        # Tolerance classes for the filter dropdown
+        # Tolerance classes for the filter dropdown
+        extra_context = extra_context or {}
+        extra_context['tolerance_classes'] = TOLERANCE_CLASSES
+
+        # Get selected class from request
+        selected_class = request.GET.get('it_class')
+        if selected_class:
+            extra_context['selected_class'] = selected_class
+            # Get complete tolerance objects for the selected class
+            # Jetzt korrekter Zugriff auf das Model
+            tolerances = ISOToleranceITClass.objects.filter(
+                tolerance_class=selected_class
+            ).order_by('nominal_size_min')
+            extra_context['tolerances'] = tolerances
+        
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def nominal_size_range(self, obj):
+        return f"{obj.nominal_size_min}mm - {obj.nominal_size_max}mm"
+    nominal_size_range.short_description = 'Nennmaßbereich'
+    
+    def description_short(self, obj):
+        return obj.description[:50] + '...' if obj.description and len(obj.description) > 50 else obj.description
+    description_short.short_description = 'Beschreibung'
 
 @admin.register(ISOToleranceClass)
 class ISOToleranceClassAdmin(admin.ModelAdmin):
@@ -63,7 +100,6 @@ class ISOToleranceClassAdmin(admin.ModelAdmin):
             tolerance_min     = 'Unteres Grenzmaß [µm]',
             description       = 'Beschreibung (optional)',
         )
-
         # def get(self, request, *args, **kwargs):
         #     """
         #     Handles GET requests for the admin view.
@@ -155,6 +191,7 @@ class ISOToleranceClassAdmin(admin.ModelAdmin):
                                 'nominal_size_min': int(row.get('nominal_size_min')),
                                 'nominal_size_max': int(row.get('nominal_size_max')),
                                 'tolerance_class': str(row.get('tolerance_class')).strip(),
+                                'tolerance_grade': str(row.get('tolerance_grade')).strip(),
                                 'tolerance_max': float(row.get('tolerance_max')),
                                 'tolerance_min': float(row.get('tolerance_min')),
                                 'description': str(row.get('description', '')).strip()

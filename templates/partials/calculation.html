@@ -1,3 +1,4 @@
+{% load static %}
 <div class="card mb-5">
 
                 <div class="card-header py-3">
@@ -17,7 +18,8 @@
                             <i class="fas fa-cogs"></i> Passungssystem
                         </label>
                         <select class="form-select" id="fit-type-select" name="fit-type">
-                            <option value="hole" selected>Einheitsbohrung</option>
+                            <option value="combined" selected disabled>Bitte Wählen</option>
+                            <option value="hole">Einheitsbohrung</option>
                             <option value="shaft">Einheitswelle</option>
                             <option value="combined">Kombiniertes System</option>
                         </select>
@@ -30,9 +32,21 @@
                         </label>        
                         <input type="number" class="form-control" id="nominal_size" name="nominal_size" step="0.01" min="0" max="31500" placeholder="Nenndurchmesser in mm"
                                 hx-post="{% url 'fits:tab_calculation' %}" hx-headers='{"Accept": "application/json"}'
-                                hx-include="#hole-tolerance,  #hole-grade, #shaft-tolerance, #shaft-grade"
-                                hx-trigger="load, change, input" value="{{ request.session.fit_nominal_size|default:'0' }}">
+                                hx-include="#tolerance-select, #bore-tolerance,  #bore-grade, #shaft-tolerance, #shaft-grade"
+                                hx-trigger="change, input, load" value="1.0">
                     </div> <!-- Eingabezeile Nennmaß -->
+                    
+                    <!-- Checkbox, ob nach ISP 286-1 errechnet werden soll, oder ob das Tabbellenwerk nach ISO 286-2 verwendet werden soll -->
+                    <div class="mb-4">
+                        <input type="checkbox" id="use_iso_286_2" name="use_iso_286_2" value="1"
+                            {% if request.session.fit_use_iso_286_2|default:'1' == '1' %} checked {% endif %}
+                            hx-post="{% url 'fits:tab_calculation' %}" 
+                            hx-include="#nominal_size, #tolerance-select, #bore-tolerance,  #bore-grade, #shaft-tolerance, #shaft-grade"
+                            hx-trigger="change">
+                        <label for="use_iso_286_2" class="form-label">
+                            <i class="fas fa-table"></i> Tabellenwerk nach DIN ISO 286-2 verwenden
+                        </label>
+                    </div> <!-- Checkbox-->
 
                     <!-- Eingabefelder Toleranzgrad -->
                     <div class="mb-4">                        
@@ -42,30 +56,30 @@
                         <select class="form-select" id="tolerance-select" name="tolerance-select"
                             selected="{{ request.session.fit_tolerance|default:'0' }}"
                             hx-post="{% url 'fits:tab_calculation' %}" 
-                            hx-include="#nominal_size, #hole-grade, #shaft-tolerance, #shaft-grade"
-                            hx-trigger="change, load">
+                            hx-include="#nominal_size, #bore-tolerance, #bore-grade, #shaft-tolerance, #shaft-grade"
+                            hx-trigger="change">
                                 <!-- Optionen werden dynamisch geladen -->
                         </select>
-                        <input type="hidden" id="tolerance-value" name="tolerance-value" value="{{ request.session.fit_tolerance|default:'0' }}">   
+                        <input type="hidden" id="tolerance-value" name="tolerance-value" value="{{ request.session.fit_tolerance|default:'8.0' }}">   
                     </div>
 
                     <!-- <Toleranzklasse der Narbe> -->
                     <div class="two-column-layout mb-4">
-                        <label for="hole-tolerance" class="form-label">
+                        <label for="bore-tolerance" class="form-label">
                             <i class="fas fa-circle"></i> Toleranzklasse der Narbe:
                         </label>
                         <div style="display: flex; gap: 10px;">
                             
-                            <select class="form-select mb-4" id="hole-tolerance" name="hole-tolerance"
+                            <select class="form-select mb-4" id="bore-tolerance" name="bore-tolerance"
                             hx-post="{% url 'fits:tab_calculation' %}" 
-                            hx-include="#nominal_size, #hole-grade, #shaft-tolerance, #shaft-grade"
+                            hx-include="#nominal_size, #tolerance-select, #bore-grade, #shaft-tolerance, #shaft-grade"
                             hx-trigger="change">
                                 <!-- Optionen werden dynamisch geladen -->
                             </select>
 
-                            <select class="form-select mb-4" id="hole-grade" name="hole-grade"
+                            <select class="form-select mb-4" id="bore-grade" name="bore-grade"
                             hx-post="{% url 'fits:tab_calculation' %}" 
-                            hx-include="#nominal_size, #hole-tolerance, #shaft-tolerance, #shaft-grade"
+                            hx-include="#nominal_size, #tolerance-select, #bore-tolerance, #shaft-tolerance, #shaft-grade"
                             hx-trigger="change"
                             >
                             <!-- Optionen werden dynamisch geladen -->
@@ -79,22 +93,22 @@
                         <div style="display: flex; flex-direction: column;">
                             <div style="display: flex; flex-direction: column; width: 100%;">
                                 <div style="display: flex; flex-direction: row; margin-bottom: 8px;">
-                                    <div style="flex: 1; padding-right: 20px;">Oberes Grenzabmaß Narbe (ES)</div>
+                                    <div style="flex: 1; padding-right: 20px;">Oberes Grenzabmaß Bohrung (ES)</div>
                                     <div id="ES" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;" data-unit="µm">0,000</div>
-                                    <div style="flex: 1; padding-right: 20px;">Toleranzbreite (i)</div>
-                                    <div id="I" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">0,000 µm</div>
+                                    <div style="flex: 1; padding-right: 20px;">Toleranz (T)</div>
+                                    <div id="T" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">0,000 µm</div>
                                 </div>
                                 <div style="display: flex; flex-direction: row; margin-bottom: 8px;">
                                     <div style="flex: 1; padding-right: 20px;">Unteres Grenzabmaß Bohrung (EI)</div>
                                     <div id="EI" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">0,000 µm</div>
-                                    <div style="flex: 1; padding-right: 20px;">Toleranz (T)</div>
-                                    <div id="T" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">&nbsp;</div>
+                                    <div style="flex: 1; padding-right: 20px;">Höchstmaß (ULS)</div>
+                                    <div id="ULS" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">&nbsp;</div>
                                 </div>
                                 <div style="display: flex; flex-direction: row;">
-                                    <div style="flex: 1; padding-right: 20px;">Toleranzfeld Bohrung (IT)</div>
+                                    <div style="flex: 1; padding-right: 20px;">Grundtoleranz (IT)</div>
                                     <div id="IT" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">0,000 µm</div>
-                                    <div style="flex: 1; padding-right: 20px;">&nbsp;</div>
-                                    <div style="flex: 1; padding-right: 20px;">&nbsp;</div>
+                                    <div style="flex: 1; padding-right: 20px;">Mindestmaß (LLS)</div>
+                                    <div id="LLS" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">&nbsp;</div>
                                 </div>
                             </div>
                         </div>
@@ -108,14 +122,14 @@
                         <div style="display: flex; gap: 10px;">
                             <select class="form-select mb-3" id="shaft-tolerance" name="shaft-tolerance"
                                 hx-post="{% url 'fits:tab_calculation' %}"
-                                hx-include="#nominal_size, #hole-tolerance, #hole-grade, #shaft-grade"
+                                hx-include="#nominal_size, #tolerance-select, #bore-tolerance, #bore-grade, #shaft-grade"
                                 hx-trigger="change">
                             <!-- Optionen werden dynamisch geladen -->
                             </select>
                             
                             <select class="form-select mb-3" id="shaft-grade" name="shaft-grade"
                                 hx-post="{% url 'fits:tab_calculation' %}" 
-                                hx-include="#nominal_size, #hole-tolerance, #hole-grade, #shaft-tolerance"
+                                hx-include="#nominal_size, #tolerance-select, #bore-tolerance, #bore-grade, #shaft-tolerance"
                                 hx-trigger="change">
                                 <!-- Optionen werden dynamisch geladen -->
                             </select>
@@ -128,20 +142,20 @@
                             <div style="display: flex; flex-direction: row; margin-bottom: 8px;">
                                 <div style="flex: 1; padding-right: 20px;">Oberes Grenzabmaß Bohrung (es)</div>
                                 <div id="es" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">-1,000 µm</div>
-                                <div style="flex: 1; padding-right: 20px;">Toleranzbreite (i)</div>
-                                <div id="i" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">-1,000 µm</div>
+                                <div style="flex: 1; padding-right: 20px;">Toleranz (T)</div>
+                                <div id="t" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">-1,000 µm</div>
                             </div>
                             <div style="display: flex; flex-direction: row; margin-bottom: 8px;">
                                 <div style="flex: 1; padding-right: 20px;">Unteres Grenzabmaß Bohrung (ei)</div>
                                 <div id="ei" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">-1,000 µm</div>
-                                <div style="flex: 1; padding-right: 20px;">Toleranz (T)</div>
-                                <div id="t" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">-1,000 µm</div>
+                                <div style="flex: 1; padding-right: 20px;">Höchstmaß (ULS)</div>
+                                <div id="uls" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">-1,000 µm</div>
                             </div>
                             <div style="display: flex; flex-direction: row;">
-                                <div style="flex: 1; padding-right: 20px;">Toleranzfeld Welle (IT)</div>
+                                <div style="flex: 1; padding-right: 20px;">Grundtoleranz (IT)</div>
                                 <div id="it" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">-1,000 µm</div>
-                                <div style="flex: 1; padding-right: 20px;">&nbsp;</div>
-                                <div style="flex: 1; padding-right: 20px;">&nbsp;</div>
+                                <div style="flex: 1; padding-right: 20px;">Mindestmaß (LLS)</div>
+                                <div id="lls" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">-1,000 µm</div>
                             </div>
                         </div>            
                     </div><!-- Toleranzklasse der Welle-->
@@ -150,28 +164,35 @@
 
                     <h3><i class="fas fa-info-circle"></i> Informationen zur Passung</h3>
 
-                    <div class="two-column-layout mb-20" style="max-height: 400px; overflow: auto;">
-                        <canvas id="toleranceCanvas" width="1" height="1"></canvas>
-                    </div>
+                    {% comment %} <div class="two-column-layout mb-20" style="max-height: 400px; overflow: auto;">
+                        <div style="display: flex; justify-content: center; align-items: center;">
+                            <img id="drawing" 
+                            src="{% static 'images/fits_placeholder.png' %}" 
+                            alt="Passungsdarstellung" 
+                            style="max-width: 100%; height: 50%; width: 50%; border: 2px solid  #e50043; border-radius: 4px;"
+                            hx-trigger="load, change from:#nominal_size, change from:#tolerance-select, change from:#bore-tolerance, change from:#bore-grade, change from:#shaft-tolerance, change from:#shaft-grade, change from:#fit-type-select"
+                            >
+                        </div>
+                    </div> {% endcomment %}
+
                     <div style="display: flex; flex-direction: column; gap: 20px;">
                         <div style="border: 1px solid #dee2e6; width: 100%; margin-bottom: 20px; padding: 10px; border-radius: 4px;">
                             <div style="display: flex; flex-direction: row; margin-bottom: 10px;">
-                                <div style="flex: 1; padding-right: 20px;">Maximales Spiel:</div>
-                                <div id="imax" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;"><p id="max-clearance">0.025 mm</p></div>
-                                <div style="flex: 1; padding-right: 20px;">Minimales Spiel:</div>
-                                <div id="s" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;"><p id="min-clearance">0.009 mm</p></div>
+                                <div style="flex: 1; padding-right: 20px;">Mindestspiel:</div>
+                                <div id="s-min" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">0.000 µm</div>
+                                <div style="flex: 1; padding-right: 20px;">Höchstspiel:</div>
+                                <div id="s-max" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">0.000 µm</div>
                             </div>
                             <div style="display: flex; flex-direction: row;">
                                 <div style="flex: 1; padding-right: 20px;">Passungsart</div>
-                                <div id="cmax" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;"><p id="fit-type">Spielpassung</p></div>
+                                <div id="fit-type" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">Spielpassung</div>
                                 <div style="flex: 1; padding-right: 20px;">Passungssystem</div>
-                                <div id="clearance_max" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;"><p id="fit-system">Einheitsbohrung</p></div>
+                                <div id="fit-system" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">Einheitsbohrung</div>
                             </div>
                         </div>            
                     </div> <!-- Card Footer -->
             </div> <!-- card -->
 </div> <!-- card -->
-    {% load static %}
 
-    <script type="text/javascript" src="{% static 'js/calculation.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/calculation.js' %}"></script>
 
