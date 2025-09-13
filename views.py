@@ -349,7 +349,7 @@ class FitsService:
 
         match selected_tolerance_lower:
             case letter if letter in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'cd', 'ef', 'fg']:
-                self.Shaft['results']['es'] = self.Shaft['values']['EI'] + float(self.Tolerance.get('selected_tolerance'))
+                self.Shaft['results']['es'] = self.Shaft['values']['ei'] + float(self.Tolerance.get('selected_tolerance'))
             case 'h':
                 self.Shaft['results']['es'] = 0
                 self.Shaft['results']['ei'] = -1.0*float(self.Tolerance.get('selected_tolerance'))
