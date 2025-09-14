@@ -19,17 +19,17 @@ document.addEventListener("DOMContentLoaded", function () {
     const htmlToleranceSelectById = document.getElementById('tolerance-select');
 
     // Function to enable/disable tolerance select based on checkbox
-    function use_286_2_tabellular(isChecked=true) {
-        if (isChecked) {
-            htmlToleranceSelectById.setAttribute('disabled', 'disabled');
-            htmlBoreGradeById.removeAttribute('disabled');
-            htmlShaftGradeById.removeAttribute('disabled');
-        } else {
-            htmlBoreGradeById.setAttribute('disabled', 'disabled');
-            htmlShaftGradeById.setAttribute('disabled', 'disabled');
-            htmlToleranceSelectById.removeAttribute('disabled');
-        }
-    }
+    // function use_286_2_tabellular(isChecked=true) {
+    //     if (isChecked) {
+    //         htmlToleranceSelectById.setAttribute('disabled', 'disabled');
+    //         htmlBoreGradeById.removeAttribute('disabled');
+    //         htmlShaftGradeById.removeAttribute('disabled');
+    //     } else {
+    //         htmlBoreGradeById.setAttribute('disabled', 'disabled');
+    //         htmlShaftGradeById.setAttribute('disabled', 'disabled');
+    //         htmlToleranceSelectById.removeAttribute('disabled');
+    //     }
+    // }
     
     // Store references to the select elements
     function populateSelect(htmlSelectById, objResponseData) {
@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", function () {
         first_option.innerHTML = 'Bitte wählen';
         first_option.disabled = true;
         first_option.selected = true;
-// console.log(`Populating select`, htmlSelectById.id, objResponseData);
+console.log(`Populating select`, htmlSelectById.id, objResponseData);
         // Clear existing options
         htmlSelectById.innerHTML = '';
         htmlSelectById.appendChild(first_option);
@@ -117,13 +117,13 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // Event listener for use_iso_286_2 checkbox
-    document.getElementById('use_iso_286_2').addEventListener('change', function (evt) {
-            use_286_2_tabellular(evt.target.checked);   
-            setFitSystem(document.getElementById('fit-type-select').value);
-            // evt.target.setAttribute('data-initializing', 'true');
-            // evt.target.dispatchEvent(new Event('change', { bubbles: true }));
-            // evt.target.removeAttribute('data-initializing');
-    });
+    // document.getElementById('use_iso_286_2').addEventListener('change', function (evt) {
+    //         use_286_2_tabellular(evt.target.checked);   
+    //         setFitSystem(document.getElementById('fit-type-select').value);
+    //         // evt.target.setAttribute('data-initializing', 'true');
+    //         // evt.target.dispatchEvent(new Event('change', { bubbles: true }));
+    //         // evt.target.removeAttribute('data-initializing');
+    // });
     
     // Initial setup based on current selection
     document.body.addEventListener('htmx:afterRequest', function (evt) {
@@ -146,20 +146,20 @@ document.addEventListener("DOMContentLoaded", function () {
             if (response.success || response.messageType === 'Hint') {
 
                 // Initial setup based on checkbox state
-                use_286_2_tabellular(document.getElementById('use_iso_286_2').checked);
+                // use_286_2_tabellular(document.getElementById('use_iso_286_2').checked);
                
-                if (response.data.Tolerance && Array.isArray(response.data.Tolerance.grades)) {
+                // if (response.data.Tolerance && Array.isArray(response.data.Tolerance.grades)) {
 
-                    const { grades, values, selected_tolerance } = response.data.Tolerance;
-                    populateSelect(
-                        htmlToleranceSelectById,
-                        grades.map((grade, index) => ({
-                            tolerance_class: grade,
-                            tolerance_value: values[index],
-                            tolerance_selected: selected_tolerance,
-                        }))
-                    );
-                }
+                //     const { grades, values, selected_tolerance } = response.data.Tolerance;
+                //     populateSelect(
+                //         htmlToleranceSelectById,
+                //         grades.map((grade, index) => ({
+                //             tolerance_class: grade,
+                //             tolerance_value: values[index],
+                //             tolerance_selected: selected_tolerance,
+                //         }))
+                //     );
+                // }
                 
                 if (response.data.Bore && Array.isArray(response.data.Bore.tolerances)) {
                     populateSelect(htmlBoreToleranceById,
@@ -208,15 +208,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
                 if (response.data.Tolerance !== null) {
-                    document.getElementById('IT').innerText = String(response.data.Tolerance.selected_tolerance) + ' µm';
-                    document.getElementById('it').innerText = String(response.data.Tolerance.selected_tolerance) + ' µm';
+                    // document.getElementById('IT').innerText = String(response.data.Tolerance.selected_tolerance) + ' µm';
+                    // document.getElementById('it').innerText = String(response.data.Tolerance.selected_tolerance) + ' µm';
                     document.getElementById('s-min').innerText = response.data.Tolerance.s_min.toFixed(3) + ' µm';
                     document.getElementById('s-max').innerText = response.data.Tolerance.s_max.toFixed(3) + ' µm';
                     document.getElementById('fit-type').innerText = response.data.Tolerance['fit-type'] === 'clearance' ? 'Spielpassung' : response.data.Tolerance['fit-type'] === 'interference' ? 'Übermaßpassung' : 'Übergangspassung';
                     document.getElementById('fit-system').innerText = document.getElementById('fit-type-select').options[document.getElementById('fit-type-select').selectedIndex].text;
                 } else {
-                    document.getElementById('IT').innerText = '--  µm';
-                    document.getElementById('it').innerText = '--  µm';
+                    // document.getElementById('IT').innerText = '--  µm';
+                    // document.getElementById('it').innerText = '--  µm';
                 }
 
 
@@ -242,7 +242,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     document.getElementById('es').innerText = objShaft.results.es + ' µm';
                     document.getElementById('ei').innerText = objShaft.results.ei + ' µm';
                     document.getElementById('t').innerText = objShaft.results.t + ' µm';
-                    document.getElementById('it').innerText = objShaft.results.it + ' µm';
+                    // document.getElementById('it').innerText = objShaft.results.it + ' µm';
                     document.getElementById('uls').innerText = objShaft.results.d_max.toFixed(3) + ' mm';
                     document.getElementById('lls').innerText = objShaft.results.d_min.toFixed(3) + ' mm';
                     // console.log('Shaft Results:', objShaft.results);
@@ -250,7 +250,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     document.getElementById('es').innerText = '--  µm';
                     document.getElementById('ei').innerText = '--  µm';
                     document.getElementById('t').innerText = '--  µm';
-                    document.getElementById('it').innerText = '--  µm';
+                    // document.getElementById('it').innerText = '--  µm';
                     document.getElementById('uls').innerText = '--  mm';
                     document.getElementById('lls').innerText = '--  mm';
                 }

@@ -36,7 +36,7 @@
                                 hx-trigger="change, input, load" value="1.0">
                     </div> <!-- Eingabezeile Nennmaß -->
                     
-                    <!-- Checkbox, ob nach ISP 286-1 errechnet werden soll, oder ob das Tabbellenwerk nach ISO 286-2 verwendet werden soll -->
+                    <!-- Checkbox, ob nach ISP 286-1 errechnet werden soll, oder ob das Tabbellenwerk nach ISO 286-2 verwendet werden soll 
                     <div class="mb-4">
                         <input type="checkbox" id="use_iso_286_2" name="use_iso_286_2" value="1"
                             {% if request.session.fit_use_iso_286_2|default:'1' == '1' %} checked {% endif %}
@@ -46,9 +46,9 @@
                         <label for="use_iso_286_2" class="form-label">
                             <i class="fas fa-table"></i> Tabellenwerk nach DIN ISO 286-2 verwenden
                         </label>
-                    </div> <!-- Checkbox-->
+                    </div> -- Checkbox-->
 
-                    <!-- Eingabefelder Toleranzgrad -->
+                    <!-- Eingabefelder Toleranzgrad 
                     <div class="mb-4">                        
                         <label for="fit-type-select" class="form-label">
                             <i class="fas fa-cogs"></i> Toleranzgrad
@@ -58,10 +58,10 @@
                             hx-post="{% url 'fits:tab_calculation' %}" 
                             hx-include="#nominal_size, #bore-tolerance, #bore-grade, #shaft-tolerance, #shaft-grade"
                             hx-trigger="change">
-                                <!-- Optionen werden dynamisch geladen -->
                         </select>
                         <input type="hidden" id="tolerance-value" name="tolerance-value" value="{{ request.session.fit_tolerance|default:'8.0' }}">   
                     </div>
+                                -- Optionen werden dynamisch geladen -->
 
                     <!-- <Toleranzklasse der Narbe> -->
                     <div class="two-column-layout mb-4">
@@ -105,8 +105,8 @@
                                     <div id="ULS" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">&nbsp;</div>
                                 </div>
                                 <div style="display: flex; flex-direction: row;">
-                                    <div style="flex: 1; padding-right: 20px;">Grundtoleranz (IT)</div>
-                                    <div id="IT" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">0,000 µm</div>
+                                    <div style="flex: 1; padding-right: 20px;">&nbsp;</div>
+                                    <div id="IT" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">&nbsp;</div>
                                     <div style="flex: 1; padding-right: 20px;">Mindestmaß (LLS)</div>
                                     <div id="LLS" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">&nbsp;</div>
                                 </div>
@@ -152,8 +152,8 @@
                                 <div id="uls" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">-1,000 µm</div>
                             </div>
                             <div style="display: flex; flex-direction: row;">
-                                <div style="flex: 1; padding-right: 20px;">Grundtoleranz (IT)</div>
-                                <div id="it" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">-1,000 µm</div>
+                                <div style="flex: 1; padding-right: 20px;">&nbsp;</div>
+                                <div id="it" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">&nbsp;</div>
                                 <div style="flex: 1; padding-right: 20px;">Mindestmaß (LLS)</div>
                                 <div id="lls" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">-1,000 µm</div>
                             </div>

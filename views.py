@@ -505,9 +505,9 @@ class FitsService:
         self.Drawing['image'] = f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode('utf-8')}",
 
         if self.Tolerance.get('iso_286_2', True):
-            self.Drawing['alt'] += f"Technische Zeichnung der Passung {self.Bore.get('selected_tolerance', '')}{self.Bore.get('selected_grade', '')}/{self.Shaft.get('selected_tolerance', '')}{self.Shaft.get('selected_grade', '')} für Nennmaß {self.NominalSize} mm"
+            self.Drawing['alt'] = f"Technische Zeichnung der Passung {self.Bore.get('selected_tolerance', '')}{self.Bore.get('selected_grade', '')}/{self.Shaft.get('selected_tolerance', '')}{self.Shaft.get('selected_grade', '')} für Nennmaß {self.NominalSize} mm"
         else:
-            self.Drawing['alt'] += f"Technische Zeichnung der Passung {self.Bore.get('selected_tolerance', '')}/{self.Shaft.get('selected_tolerance', '')} für Nennmaß {self.NominalSize} mm mit Grundtoleranz IT{self.Tolerance.get('selected_tolerance', 0)}"
+            self.Drawing['alt'] = f"Technische Zeichnung der Passung {self.Bore.get('selected_tolerance', '')}/{self.Shaft.get('selected_tolerance', '')} für Nennmaß {self.NominalSize} mm mit Grundtoleranz IT{self.Tolerance.get('selected_tolerance', 0)}"
 
         if self.Drawing['image'] == '':
             logger.error("Fehler beim Erstellen der technischen Zeichnung")
@@ -764,6 +764,7 @@ class FitsRPCView(AppTemplateMixin, View):
                     service.NominalSize = float(cleaned_nominal_size or 1.0)
                     service.get_tolerances()
                     service.get_tolerancesIT(nominal_size=service.NominalSize)
+                    logger.debug(f"Updated Nominal Size: {service.NominalSize}")
                 case 'tolerance-select':
                     service.Tolerance['selected_tolerance'] = form_data.get('tolerance-select', None)
                     service.Bore['IT'] = service.Shaft['it'] = service.Tolerance['value'] = float(form_data.get('tolerance-select', -1))
@@ -771,17 +772,21 @@ class FitsRPCView(AppTemplateMixin, View):
                 case 'bore-tolerance':
                     service.Bore['selected_tolerance'] = form_data.get('bore-tolerance', None)
                     service.get_grades(isBore=True)
-                    # print(service.Bore['grades'])
+                    service.get_values(isBore=True)
+                    logger.debug(f"Selected Bore Grade: {service.Bore}")
                 case 'shaft-tolerance':
                     service.Shaft['selected_tolerance'] = form_data.get('shaft-tolerance', None)
                     service.get_grades(isBore=False)
-                    # print(service.Shaft['grades'])
+                    service.get_values(isBore=False)
+                    logger.debug(f"Selected Shaft Grade: {service.Shaft}")
                 case 'bore-grade':
                     service.Bore['selected_grade'] = form_data.get('bore-grade', None)
                     service.get_values(isBore=True)
-                    # print(f"\033[93mCALCULATED: {service.Bore.items()}\033[0m")
+                    logger.debug(f"Selected Bore Grade: {service.Bore}")
                 case 'shaft-grade':
                     service.Shaft['selected_grade'] = form_data.get('shaft-grade', None)
+                    service.get_values(isBore=False)
+                    logger.debug(f"Selected Shaft Grade: {service.Shaft}")
                 case 'use_iso_286_2':
                     service.Tolerance['use_iso_286_2'] = form_data.get('use_iso_286_2', 0) == '1'
                     print(f"\033[93mUSE ISO 286-2: {form_data.get('use_iso_286_2', 0)} {service.Tolerance['use_iso_286_2']}\033[0m")
