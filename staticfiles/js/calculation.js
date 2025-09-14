@@ -255,18 +255,18 @@ document.addEventListener("DOMContentLoaded", function () {
                     document.getElementById('lls').innerText = '--  mm';
                 }
 
-                // console.log('Drawing Data:', response.data.Drawing);
-                // if (response.data.Drawing.image !== null) {
-                //     const objDrawing = response.data.Drawing;
-                //     document.getElementById('drawing').src = objDrawing.image;
-                //     document.getElementById('drawing').alt = objDrawing.alt;
-                //     document.getElementById('drawing').alt = 'Technische Zeichnung der Passung';
-                //     document.getElementById('drawing').style.display = 'block';
-                // } else {
-                //     document.getElementById('drawing').src = '';
-                //     document.getElementById('drawing').alt = 'Keine Zeichnung verfügbar';
-                //     document.getElementById('drawing').style.display = 'none';
-                // }
+                console.log('Drawing Data:', response.data.Drawing);
+                if (response.data.Drawing.image !== null) {
+                    const objDrawing = response.data.Drawing;
+                    document.getElementById('drawing').src = objDrawing.image;
+                    document.getElementById('drawing').alt = objDrawing.alt;
+                    document.getElementById('drawing').alt = 'Technische Zeichnung der Passung';
+                    document.getElementById('drawing').style.display = 'block';
+                } else {
+                    document.getElementById('drawing').src = '';
+                    document.getElementById('drawing').alt = 'Keine Zeichnung verfügbar';
+                    document.getElementById('drawing').style.display = 'none';
+                }
 
 
                 } // Ende if response.success

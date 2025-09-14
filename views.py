@@ -19,6 +19,7 @@ import base64
 from io import BytesIO
 from math import pi, cos, sin
 from PIL import Image, ImageDraw, ImageFont
+from main.mixins import AppTemplateMixin
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -553,7 +554,7 @@ class FitsService:
         
         return None
 
-class FitsView(TemplateView):
+class FitsView(AppTemplateMixin, TemplateView):
 
     """View für die Anzeige der FITS-Seite mit den verfügbaren Standards.
     Diese View rendert die Seite mit den FITS-Standards und stellt die notwendigen Kontextdaten bereit.
@@ -563,18 +564,22 @@ class FitsView(TemplateView):
         
     Methoden:
         get_context_data(**kwargs): Überschreibt die Methode zur Bereitstellung zusätzlicher Kontextdaten für das Template."""
-    template_name = "index.html"
+
+    template_name = "fits/index.html"
+    app_name = 'fits'
 
     def get_context_data(self, **kwargs):
 
+        logger.error(f"FITS View: {self.get_app_name()} ")
         standards = Standards.objects.filter(app_name='fits').order_by('title') \
             .values('id', 'title', 'description', 'link')
 
         context = super().get_context_data(**kwargs)
+        context['app_name'] = self.app_name
         context['standards'] = standards
         return context
 
-class FitsRPCView(View):
+class FitsRPCView(AppTemplateMixin, View):
 
     """View für die Verwaltung und Speicherung des FitsService-Objekts in der Benutzersitzung.
     Diese View stellt Methoden zum Abrufen, Speichern und Serialisieren des FitsService-Objekts bereit.
