@@ -6,12 +6,7 @@ if (typeof Object.groupBy !== "function") {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-
-    // var objCanvas = document.getElementById("toleranceCanvas");
-    // var objParentDiv = objCanvas.parentElement;
-    // objCanvas.width = objParentDiv.offsetWidth;
-    // objCanvas.height = objParentDiv.offsetWidth / 3;
-
+    // Get references to HTML elements
     const htmlFitSystemSelectById  = document.getElementById('fit-system-select');
     const htmlNominalSizeById      = document.getElementById('nominal_size');
     const htmlBoreToleranceById    = document.getElementById('bore-tolerance');
@@ -20,6 +15,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const htmlShaftGradeById       = document.getElementById('shaft-grade');
 
     try {
+
         // Store references to the select elements
         function populateSelect(htmlSelectById, objResponseData) {
             htmlSelectById.setAttribute("data-initializing", "true");
@@ -74,7 +70,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 htmlBoreToleranceById.removeAttribute('disabled');
                 htmlBoreGradeById.removeAttribute('disabled');
                 htmlShaftToleranceById.removeAttribute('disabled');
-                objShaftGrade.removeAttribute('disabled');
+                htmlShaftGradeById.removeAttribute('disabled');
                 document.getElementById('fit-type-system-msg').innerText = 'Kombinierte Passung';
 
             } else {
@@ -82,24 +78,64 @@ document.addEventListener("DOMContentLoaded", function () {
                 htmlBoreToleranceById.removeAttribute('disabled');
                 htmlBoreGradeById.removeAttribute('disabled');
                 htmlShaftToleranceById.removeAttribute('disabled');
-                objShaftGrade.removeAttribute('disabled');
+                htmlShaftGradeById.removeAttribute('disabled');
             }
+
+            // Trigger change events to update the form
+            // htmlBoreToleranceById.dispatchEvent(new Event('', { bubbles: true }));
+            // htmlShaftToleranceById.dispatchEvent(new Event('load', { bubbles: true }));
         }
+
+        // Helper function to show notifications
+        function showNotification(type, message) {
+
+            const errorMessageDiv = document.getElementById('error-message');
+            // errorMessageDiv.innerHTML = '<i class="fa fa-exclamation-triangle" style="display:inline; text-align:left; vertical-align:middle;"></i> <span style="vertical-align:middle; text-align:center; display:inline-block; width:100%;">' + message + '</span>';
+            errorMessageDiv.classList.remove('d-none');
+
+            errorMessageDiv.className = `notification ${type}`;
+            errorMessageDiv.textContent = message;
+            errorMessageDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px;
+                border-radius: 5px;
+                color: white;
+                z-index: 1000;
+                ${type === 'error' ? 'background: #f44336;' : 'background: #4CAF50;'}
+            `;
+                        
+            setTimeout(function () {
+                errorMessageDiv.classList.add('d-none');
+                errorMessageDiv.innerHTML = '';
+            }, 3000);
+
+            if (type === 'error') {
+                console.error('Error Notification:', message);
+            } else if (type === 'warning') {
+                console.log('Warning Notification:', message);
+            } else if (type === 'info') {
+                console.debug('Info Notification:', message);
+            }
+        } // ende von showNotification
+
+
     } catch (error) {
         console.error('Error in populateSelect or setFitSystem:', error);
     }
     // Event listener for nominal size input
     document.addEventListener("keydown", function (evt) {
-        const nominalSizeInput = document.getElementById('nominal_size');
-        if (!nominalSizeInput) return;
-        let value = parseFloat(nominalSizeInput.value) || 0;
+
+        if (!htmlNominalSizeById) return;
+        let value = parseFloat(htmlNominalSizeById.value) || 0;
         if (evt.key === '+') {
-            nominalSizeInput.value = value + 1;
-            nominalSizeInput.dispatchEvent(new Event('change'));
+            htmlNominalSizeById.value = value + 1;
+            htmlNominalSizeById.dispatchEvent(new Event('change'));
         } else if (evt.key === '-') {
             if (value > 1) {
-                nominalSizeInput.value = value - 1;
-                nominalSizeInput.dispatchEvent(new Event('change'));
+                htmlNominalSizeById.value = value - 1;
+                htmlNominalSizeById.dispatchEvent(new Event('change'));
             }
         }
     });
@@ -111,8 +147,6 @@ document.addEventListener("DOMContentLoaded", function () {
         if (value === 'hole') document.getElementById('fit-type-system-msg').innerText = 'Einheitsbohrung';
         else if (value === 'shaft') document.getElementById('fit-type-system-msg').innerText = 'Einheitswelle';
         else if (value === 'combined') document.getElementById('fit-type-system-msg').innerText = 'Kombiniertes System';
-
-        setFitSystem(value);
 
     });
 
@@ -152,7 +186,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 //     );
                 // }
                 try {
+                    
+                    console.debug('Response Data:', response.data);
+                    htmlNominalSizeById.value = response.data.Tolerance.nominal_size || '';
 
+                    htmlFitSystemSelectById.value = response.data.Tolerance['fit-type-system-msg'] || '';
+                    setFitSystem(htmlFitSystemSelectById.value);
+
+                    // Set fit system and adjust form fields
                     if (response.data.Bore && Array.isArray(response.data.Bore.tolerances)) {
                         populateSelect(htmlBoreToleranceById,
                             response.data.Bore.tolerances.map((tolerance, index) => ({
@@ -270,8 +311,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // Erst nach einer erfolgreichen Anfrage das Diagramm zeichnen
             if (response.success) {
-                // const objCanvas = document.getElementById('toleranceCanvas');
-                // const objCtx = objCanvas.getContext('2d');
                 const objBore = response.data.Bore
                 const objShaft = response.data.Shaft
                 const objTolerance = response.data.Tolerances
@@ -289,34 +328,52 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Fehlerbehandlung optimiert
-    document.body.addEventListener('htmx:error', function (evt) {
-        const errorMessageDiv = document.getElementById('error-message');
-        let messageText = 'Ein unbekannter Fehler ist aufgetreten.';
-        if (evt.detail.errorInfo && typeof evt.detail.errorInfo === 'object') {
-            let response;
+    // Fehlerbehandlung für htmx-Anfragen
+
+    document.body.addEventListener('htmx:responseError', function (evt) {
+    //     showNotification('error', 'Server error occurred');
+    // });
+
+    // document.body.addEventListener('htmx:error', function (evt) {
+
+        const detail = evt.detail;
+        let errorMessage = 'Ein unbekannter Fehler ist aufgetreten';
+
+        if (detail.xhr) {
+            const status = detail.xhr.status;
+
+            switch(status) {
+                case 400:
+                    errorMessage = 'Bad request';
+                    break;
+                case 403:
+                    errorMessage = 'Permission denied';
+                    break;
+                case 404:
+                    errorMessage = 'Resource not found';
+                    break;
+                case 500:
+                    errorMessage = 'Server error';
+                    break;
+                default:
+                    errorMessage = `Error ${status}`;
+            }
+
+                // Try to parse JSON error response from Django
             try {
-                response = JSON.parse(evt.detail.errorInfo.error);
-            } catch (e) {
-                response = {};
-            }
-            if (response && typeof response === 'object') {
-                if (response.message) {
-                    messageText = response.message;
-                } else if (response.messageType) {
-                    messageText = response.messageType;
+                const response = JSON.parse(detail.xhr.responseText);
+                if (response.error) {
+                    errorMessage = response.error;
                 }
+                if (response.message) {
+                    errorMessage = response.message;
+                }
+            } catch (e) {
+                // Not JSON response
             }
         }
-        if (errorMessageDiv) {
-            errorMessageDiv.innerHTML = '<i class="fa fa-exclamation-triangle" style="display:inline; text-align:left; vertical-align:middle;"></i> <span style="vertical-align:middle; text-align:center; display:inline-block; width:100%;">' + messageText + '</span>';
-            errorMessageDiv.classList.remove('d-none');
-            setTimeout(function () {
-                errorMessageDiv.classList.add('d-none');
-                errorMessageDiv.innerHTML = '';
-            }, 3000);
-        }
-        console.error('Antwortfehler:', messageText);
+        // console.log('htmx:error event:', evt);
+        showNotification('error', errorMessage);
     });
 
     // event listener for htmx:info instead of error
@@ -334,227 +391,4 @@ document.addEventListener("DOMContentLoaded", function () {
     window.addEventListener('resize', function () {
         objCanvas.width = objParentDiv.offsetWidth;
     });
-
-    // Function to draw the tolerance chart
-    function drawToleranceChart(objCanvas, objCtx,
-        hole_es, hole_ei,
-        bore_dmax, bore_dmin,        // 
-        hole_tolerance,              // e.g. H7
-        shaft_es, shaft_ei,
-        shaft_dmax, shaft_dmin,
-        shaft_tolerance,
-        nominal_size) {
-
-        console.log('All Values:', nominal_size);
-
-        // Draw the tolerance chart
-        const width = objCanvas.width;
-        const height = objCanvas.height;
-        const padding = 80;
-        const chartWidth = width - 2 * padding;
-        const chartHeight = height - 2 * padding;
-        const nominalSize = parseFloat(nominal_size);
-
-        // Clear canvas
-        objCtx.clearRect(0, 0, width, height);
-
-        // Calculate tolerance values
-        const holeData = {
-            maxSize: bore_dmax,
-            minSize: bore_dmin
-        };
-
-        const shaftData = {
-            maxSize: shaft_dmax,
-            minSize: shaft_dmin
-        };
-
-        // Determine min and max values for scaling
-        const allValues = [
-            bore_dmax, bore_dmin,
-            shaft_dmax, shaft_dmin,
-            nominalSize
-        ];
-
-
-        // Use nominalSize as the reference and pad the range symmetrically
-        const toleranceMax = Math.max(bore_dmax, shaft_dmax, nominalSize);
-        const toleranceMin = Math.min(bore_dmin, shaft_dmin, nominalSize);
-        const paddingValue = Math.max(Math.abs(toleranceMax - nominalSize), Math.abs(nominalSize - toleranceMin)) * 1.1;
-        const maxValue = nominalSize + paddingValue;
-        const minValue = nominalSize - paddingValue;
-        const valueRange = maxValue - minValue;
-
-        // Calculate scaling factors
-        const scale = chartHeight / valueRange;
-
-        // Function to calculate Y position from size value
-        const getYPos = (value) => {
-            return height - padding - (value - minValue) * scale;
-        };
-
-        // Draw background
-        objCtx.fillStyle = '#ffffffff';
-        objCtx.fillRect(0, 0, width, height);
-
-        // Draw axes
-        objCtx.beginPath();
-        objCtx.moveTo(padding, padding);
-        objCtx.lineTo(padding, height - padding);
-        objCtx.lineTo(width - padding, height - padding);
-        objCtx.strokeStyle = '#e50043';
-        objCtx.lineWidth = 2;
-        objCtx.stroke();
-
-        // Draw axis labels
-        objCtx.font = '14px Arial';
-        objCtx.fillStyle = '#4d4d4d';
-        objCtx.textAlign = 'center';
-        objCtx.textBaseline = 'middle';
-
-        // X-axis label
-        objCtx.fillText('Toleranzzonen', width / 2, height - 20);
-
-        // Y-axis label
-        objCtx.save();
-        objCtx.translate(20, height / 2);
-        objCtx.rotate(-Math.PI / 2);
-        objCtx.fillText('Maß (mm)', 0, 0);
-        objCtx.restore();
-
-        // Draw grid lines and labels
-        objCtx.textAlign = 'right';
-        objCtx.textBaseline = 'middle';
-        const steps = 5;
-        // objCtx.translate(20, height / 2);
-        for (let i = 0; i <= steps; i++) {
-            const value = minValue + (i / steps) * valueRange;
-            const y = getYPos(value);
-            // Grid line
-            objCtx.beginPath();
-            objCtx.moveTo(padding, y);
-            objCtx.lineTo(width - padding, y);
-            objCtx.strokeStyle = '#ecf0f1';
-            objCtx.lineWidth = 1;
-            objCtx.stroke();
-
-            // Label
-            objCtx.fillStyle = '#4d4d4d';
-            objCtx.fillText(value.toFixed(2), padding - 10, y);
-        }
-
-        // Draw tolerance zones
-        const holeZoneTop = getYPos(holeData.maxSize);
-        const holeZoneBottom = getYPos(holeData.minSize);
-        const shaftZoneTop = getYPos(shaftData.maxSize);
-        const shaftZoneBottom = getYPos(shaftData.minSize);
-
-        // Draw hole tolerance zone
-        objCtx.fillStyle = 'rgba(231, 76, 60, 0.2)';
-        objCtx.fillRect(padding + 50, holeZoneTop, 150, holeZoneBottom - holeZoneTop);
-        objCtx.strokeStyle = '#e74c3c';
-        objCtx.lineWidth = 2;
-        objCtx.strokeRect(padding + 50, holeZoneTop, 150, holeZoneBottom - holeZoneTop);
-
-        // Draw shaft tolerance zone
-        objCtx.fillStyle = 'rgba(52, 152, 219, 0.2)';
-        objCtx.fillRect(padding + 250, shaftZoneTop, 150, shaftZoneBottom - shaftZoneTop);
-        objCtx.strokeStyle = '#3498db';
-        objCtx.lineWidth = 2;
-        objCtx.strokeRect(padding + 250, shaftZoneTop, 150, shaftZoneBottom - shaftZoneTop);
-
-        // Draw nominal size line
-        const nominalY = getYPos(nominalSize);
-        // console.log(`Nominal Y: ${nominalY} for nominal size ${nominalSize}`);
-        objCtx.beginPath();
-        objCtx.moveTo(padding, nominalY);
-        objCtx.lineTo(width - padding, nominalY);
-        objCtx.setLineDash([1, 20, 1]);
-        objCtx.strokeStyle = '#4d4d4d';
-        objCtx.lineWidth = 2;
-        objCtx.stroke();
-        objCtx.setLineDash([]);
-
-        // Draw labels for tolerance zones
-        objCtx.font = 'bold 16px Arial';
-        objCtx.textAlign = 'center';
-
-        // Bore label
-        objCtx.fillStyle = '#38914eff';
-        objCtx.fillText(`Bohrung: ${hole_tolerance}`, padding + 125, holeZoneTop - 20);
-        objCtx.fillText(`Ø ${holeData.maxSize}`, padding + 125, holeZoneTop - 5);
-        objCtx.fillText(`Ø ${holeData.minSize}`, padding + 125, holeZoneBottom + 15);
-
-        // Shaft label
-        objCtx.fillStyle = '#cbc80aff';
-        objCtx.fillText(`Welle: ${shaft_tolerance}`, padding + 325, shaftZoneTop - 20);
-        objCtx.fillText(`Ø ${shaftData.maxSize}`, padding + 325, shaftZoneTop - 5);
-        objCtx.fillText(`Ø ${shaftData.minSize}`, padding + 325, shaftZoneBottom + 15);
-
-        // Draw nominal size label
-        objCtx.fillStyle = '#e50043';
-        objCtx.fillText(`Nennmaß: Ø ${nominalSize}`, width - 150, nominalY - 15);
-
-        // Draw tolerance symbols
-        objCtx.font = '20px Arial';
-        objCtx.fillStyle = '#2c3e50';
-        objCtx.fillText("↥", padding + 125, holeZoneTop - 40);
-        objCtx.fillText("↧", padding + 125, holeZoneBottom + 35);
-        objCtx.fillText("↥", padding + 325, shaftZoneTop - 40);
-        objCtx.fillText("↧", padding + 325, shaftZoneBottom + 35);
-
-        // Draw comparison diagram
-        const comparisonX = padding + 500;
-        const comparisonWidth = 150;
-
-        // Draw hole in comparison
-        objCtx.beginPath();
-        objCtx.arc(comparisonX, nominalY, nominalSize / 2, 0, Math.PI * 2);
-        objCtx.strokeStyle = '#e74c3c';
-        objCtx.lineWidth = 3;
-        objCtx.stroke();
-
-        // Draw shaft in comparison
-        objCtx.beginPath();
-        objCtx.arc(comparisonX, nominalY, nominalSize / 2 - 5, 0, Math.PI * 2);
-        objCtx.strokeStyle = '#3498db';
-        objCtx.lineWidth = 3;
-        objCtx.stroke();
-
-        // Draw clearance
-        const clearance = holeData.minSize - shaftData.maxSize;
-        if (clearance > 0) {
-            objCtx.beginPath();
-            objCtx.arc(comparisonX, nominalY, nominalSize / 2 - 2.5, 0, Math.PI * 2);
-            objCtx.setLineDash([2, 2]);
-            objCtx.strokeStyle = '#2ecc71';
-            objCtx.lineWidth = 1;
-            objCtx.stroke();
-            objCtx.setLineDash([]);
-
-            // Draw clearance indicator
-            objCtx.beginPath();
-            objCtx.moveTo(comparisonX + nominalSize / 2 + 5, nominalY);
-            objCtx.lineTo(comparisonX + nominalSize / 2 + 20, nominalY);
-            objCtx.strokeStyle = '#2c3e50';
-            objCtx.lineWidth = 1;
-            objCtx.stroke();
-
-            objCtx.beginPath();
-            objCtx.moveTo(comparisonX + nominalSize / 2 + 5, nominalY - 10);
-            objCtx.lineTo(comparisonX + nominalSize / 2 + 5, nominalY + 10);
-            objCtx.stroke();
-
-            objCtx.beginPath();
-            objCtx.moveTo(comparisonX + nominalSize / 2 + 20, nominalY - 10);
-            objCtx.lineTo(comparisonX + nominalSize / 2 + 20, nominalY + 10);
-            objCtx.stroke();
-
-            objCtx.font = '12px Arial';
-            objCtx.fillStyle = '#2c3e50';
-            objCtx.fillText(`Spiel: ${clearance}mm`, comparisonX + nominalSize / 2 + 40, nominalY);
-        }
-
-    }
-
 });
