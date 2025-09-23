@@ -1,0 +1,199 @@
+/* Custom Styles for ISO Tolerance Admin */
+.quick-filters {
+    background: #f8f8f8;
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.quick-filter-sections {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.quick-filter-section {
+    background: white;
+    padding: 15px;
+    border-radius: 5px;
+    border: 1px solid #e0e0e0;
+}
+
+.quick-filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    color: var(--button-fg, white);
+    border: 1px solid #d32f2f;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.quick-filter-btn {
+    background: #417690;
+    color: var(--button-fg, white);
+    border: none;
+    padding: 6px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 12px;
+    transition: all 0.3s ease;
+}
+
+.quick-filter-btn:hover {
+    background: #058dee;
+    color: var(-button-fg, white);
+    transform: translateY(-1px);
+}
+
+.quick-filter-btn.active {
+    background: #79aec8;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.quick-filter-btn.visited {
+    background: #79aec8;
+    color: var(-button-fg, white);
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.size-group {
+    margin-bottom: 15px;
+}
+
+.size-group h4 {
+    margin: 0 0 8px 0;
+    color: #333;
+    font-size: 14px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.nominal-size-info {
+    background: #f0f0f0;
+    padding: 10px;
+    border-left: 4px solid #417690;
+    margin: 10px 0;
+}
+
+.tolerance-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: bold;
+    font-size: 12px;
+    margin-right: 5px;
+}
+
+.badge-hole { background: #e3f2fd; color: #1565c0; }
+.badge-shaft { background: #f3e5f5; color: #7b1fa2; }
+
+/* Table styling */
+#result_list {
+    width: 100%;
+}
+
+#result_list th {
+    background: white;
+    color: #333;
+    font-weight: bold;
+}
+
+#result_list td {
+    vertical-align: middle;
+}
+
+/* Tolerance class badges */
+.tolerance-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: bold;
+    font-size: 11px;
+    margin-right: 5px;
+}
+
+.badge-hole {
+    background: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #1565c0;
+}
+
+.badge-shaft {
+    background: #f3e5f5;
+    color: #7b1fa2;
+    border: 1px solid #7b1fa2;
+}
+
+/* Form styling */
+.field-nominal_size_min, .field-nominal_size_max,
+.field-tolerance_min, .field-tolerance_max {
+    width: 150px;
+}
+
+.field-tolerance_class {
+    width: 100px;
+}
+
+.field-tolerance_grade {
+    width: 80px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .quick-filter-buttons {
+        flex-direction: column;
+    }
+    
+    .quick-filter-btn {
+        text-align: center;
+    }
+    
+    .tolerance-values {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 1200px) {
+    .quick-filter-sections {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Highlight important fields */
+.field-tolerance_display {
+    font-weight: bold;
+    color: #333;
+}
+
+.field-nominal_range_display {
+    color: #666;
+    font-family: monospace;
+}
+
+.field-tolerance_range_display {
+    color: #d32f2f;
+    font-family: monospace;
+}
+
+/* Filter sidebar improvements */
+#changelist-filter {
+    background: #f8f8f8;
+}
+
+#changelist-filter h2 {
+    background: #417690;
+    color: white;
+    padding: 8px 15px;
+    margin: 0;
+}
+
+/* Action buttons */
+.submit-row {
+    background: #f8f8f8;
+    border: 1px solid #ddd;
+}

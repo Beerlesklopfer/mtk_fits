@@ -1,0 +1,163 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+.duplicate-report {
+    background: white;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.duplicate-group {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    margin: 15px 0;
+    padding: 15px;
+}
+
+.duplicate-item {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 3px;
+    padding: 10px;
+    margin: 5px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.duplicate-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.badge {
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.badge-warning { background: #fff3cd; color: #856404; }
+.badge-danger { background: #f8d7da; color: #721c24; }
+.badge-success { background: #d1edff; color: #155724; }
+
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2.5em;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+.action-buttons {
+    margin: 20px 0;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-block;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary { background: #007bff; color: white; }
+.btn-danger { background: #dc3545; color: white; }
+.btn-success { background: #28a745; color: white; }
+.btn-warning { background: #ffc107; color: #212529; }
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="duplicate-report">
+    <h1>🔍 Duplikatsuche - ISO Toleranzen</h1>
+    
+    <div class="stats-container">
+        <div class="stat-card">
+            <div>Gefundene Duplikat-Gruppen</div>
+            <div class="stat-number">{{ duplicates|length }}</div>
+        </div>
+        <div class="stat-card">
+            <div>Totale Duplikat-Einträge</div>
+            <div class="stat-number">{{ total_duplicates }}</div>
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <a href="{% url 'admin:isotolerance_duplicates_report' %}" class="btn btn-primary">
+            📊 Detaillierten Report anzeigen
+        </a>
+        <a href="../" class="btn btn-warning">
+            ← Zurück zur Übersicht
+        </a>
+    </div>
+
+    {% if duplicates %}
+        {% for group_name, items in duplicates.items %}
+        <div class="duplicate-group">
+            <h3>
+                <span class="badge badge-warning">{{ items|length }} Duplikate</span>
+                {{ group_name }}
+            </h3>
+            
+            {% for item in items %}
+            <div class="duplicate-item">
+                <div>
+                    <strong>{{ item.tolerance_class }}{{ item.tolerance_grade }}</strong>
+                    | {{ item.nominal_size_min }} - {{ item.nominal_size_max }} mm
+                    | {{ item.tolerance_min }} - {{ item.tolerance_max }} µm
+                    {% if item.description %}
+                    | {{ item.description|truncatewords:5 }}
+                    {% endif %}
+                    <br>
+                    <small>ID: {{ item.id }} | Erstellt: {{ item.created_at|date:"d.m.Y H:i" }}</small>
+                </div>
+                <div class="duplicate-actions">
+                    <a href="../{{ item.id }}/change/" class="btn btn-primary" target="_blank">
+                        ✏️ Bearbeiten
+                    </a>
+                    <a href="../{{ item.id }}/delete/" class="btn btn-danger" onclick="return confirm('Eintrag wirklich löschen?')">
+                        🗑️ Löschen
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div style="text-align: center; padding: 40px;">
+            <h2>🎉 Keine Duplikate gefunden!</h2>
+            <p>Alle Einträge sind eindeutig.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

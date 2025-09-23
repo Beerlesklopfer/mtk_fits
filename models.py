@@ -82,7 +82,7 @@ class ISOManager(models.Manager):
         """Get the tolerance value for a given nominal size and tolerance class."""
         if nominal_size is not None and tolerance_class is not None:    
             value = self.filter(
-                nominal_size_min__lte=nominal_size,
+                nominal_size_min__lt=nominal_size,
                 nominal_size_max__gte=nominal_size,
                 tolerance_class=tolerance_class,
                 tolerance_grade=tolerance_grade
@@ -90,12 +90,23 @@ class ISOManager(models.Manager):
             # Raise value error if more than one value is found
             print(f"DEBUG: {value.count()} values found for nominal size {nominal_size}, class {tolerance_class}, grade {tolerance_grade}")
             if value.count() > 1:
-                raise ValueError("Multiple tolerance values found")
+                # Print all values in red
+                print("\033[91mDEBUG: Multiple values found:\033[0m")
+                for v in value:
+                    print("\033[91m", v, "\033[0m")
+                raise ValueError("Mehrere Toleranzwerte gefunden")
             if value.exists():
                 return {
                     'tolerance_min': value[0]['tolerance_min'],
                     'tolerance_max': value[0]['tolerance_max']
                 }
+
+    def max_value(self, nominal_size=None):
+        """Get the maximum nominal size in the table."""
+        result = self.aggregate(max_size=models.Max('nominal_size_max'))
+        max_size = result.get('max_size')  # Using custom alias and .get() for safety
+        return max_size if max_size is not None else -1.0
+
 # this class represents ISO286 tolerances table
 class ISOToleranceITClass(models.Model):
     
@@ -220,5 +231,5 @@ class ISOToleranceClass(models.Model):
         verbose_name = 'DIN ISO 286-2 Tabelle'
         verbose_name_plural = 'DIN ISO 286-2 Tabellen'
         managed = True
-        unique_together = [['nominal_size_min', 'nominal_size_max', 'tolerance_class', 'tolerance_grade']]
+        unique_together = [['nominal_size_min', 'nominal_size_max', 'tolerance_class', 'tolerance_grade', 'tolerance_min', 'tolerance_max']]
         ordering = ['nominal_size_min', 'tolerance_class']

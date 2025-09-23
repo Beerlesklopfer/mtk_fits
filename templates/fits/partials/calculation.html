@@ -8,16 +8,26 @@
                 <!-- Card Body -->
                 <div class="card-body">
 
-                    <div id="error-message" class="alert alert-danger d-none" role="alert">
+                    <div id="error-message" 
+                         class="alert alert-danger d-none" 
+                         role="alert"
+                         style="position: fixed; top: 20px; right: 20px; padding: 15px; border-radius: 5px; color: white; z-index: 1000;">
                         <!-- Fehler werden dynamisch geladen -->
                     </div>
 
                     <!-- Eingabefelder Bohrungssystem -->
                     <div class="mb-4">                        
-                        <label for="fit-type-select" class="form-label">
+                        <label for="fit-system-select" class="form-label">
                             <i class="fas fa-cogs"></i> Passungssystem
                         </label>
-                        <select class="form-select" id="fit-type-select" name="fit-type">
+                        <select class="form-select" id="fit-system-select" name="fit-system-select"
+                            selected="{{ request.session.fit_type|default:'combined' }}"
+                        hx-post="{% url 'fits:tab_calculation' %}" 
+                        hx-include="#nominal_size, #tolerance-select, #bore-tolerance, #bore-grade, #shaft-tolerance, #shaft-grade"
+                        hx-trigger="change, load"
+                        hx-swap="none"
+                        hx-headers='{"Accept": "application/json"}'
+                        >
                             <option value="combined" selected disabled>Bitte Wählen</option>
                             <option value="hole">Einheitsbohrung</option>
                             <option value="shaft">Einheitswelle</option>
@@ -50,7 +60,7 @@
 
                     <!-- Eingabefelder Toleranzgrad 
                     <div class="mb-4">                        
-                        <label for="fit-type-select" class="form-label">
+                        <label for="fit-system-select" class="form-label">
                             <i class="fas fa-cogs"></i> Toleranzgrad
                         </label>
                         <select class="form-select" id="tolerance-select" name="tolerance-select"
@@ -63,10 +73,10 @@
                     </div>
                                 -- Optionen werden dynamisch geladen -->
 
-                    <!-- <Toleranzklasse der Narbe> -->
+                    <!-- <Toleranzklasse der Bohrung> -->
                     <div class="two-column-layout mb-4">
                         <label for="bore-tolerance" class="form-label">
-                            <i class="fas fa-circle"></i> Toleranzklasse der Narbe:
+                            <i class="fas fa-circle"></i> Toleranzklasse der Bohrung:
                         </label>
                         <div style="display: flex; gap: 10px;">
                             
@@ -85,11 +95,11 @@
                             <!-- Optionen werden dynamisch geladen -->
                             </select>
                         </div>
-                    </div> <!-- <Toleranzklasse der Narbe> -->
+                    </div> <!-- <Toleranzklasse der Bohrung> -->
 
-                    <!-- <Daten der Narbe> -->
+                    <!-- <Daten der Bohrung> -->
                     <div class="two-column-layout mb-4" style="align-items: flex-start;">
-                        <!-- Daten der Narbe -->
+                        <!-- Daten der Bohrung -->
                         <div style="display: flex; flex-direction: column;">
                             <div style="display: flex; flex-direction: column; width: 100%;">
                                 <div style="display: flex; flex-direction: row; margin-bottom: 8px;">
@@ -112,7 +122,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div><!-- <Daten der Narbe> -->            
+                    </div><!-- <Daten der Bohrung> -->            
 
                     <!-- Toleranzklasse der Welle-->
                     <div class="two-column-layout mb-4" style="align-items: flex-start;">
@@ -160,6 +170,8 @@
                         </div>            
                     </div><!-- Toleranzklasse der Welle-->
                 </div><!-- Card Body -->
+
+                <!-- Ergebnisse -->
                 <div class="card-footer" style="border-top: 1px solid #dee2e6; padding-top: 1em; padding-bottom: 1em; border-radius: 4px;">
 
                     <h3><i class="fas fa-info-circle"></i> Informationen zur Passung</h3>
@@ -170,7 +182,7 @@
                             src="{% static 'images/fits_placeholder.png' %}" 
                             alt="Passungsdarstellung" 
                             style="max-width: 100%; height: 50%; width: 50%; border: 2px solid  #e50043; border-radius: 4px;"
-                            hx-trigger="load, change from:#nominal_size, change from:#tolerance-select, change from:#bore-tolerance, change from:#bore-grade, change from:#shaft-tolerance, change from:#shaft-grade, change from:#fit-type-select"
+                            hx-trigger="load, change from:#nominal_size, change from:#tolerance-select, change from:#bore-tolerance, change from:#bore-grade, change from:#shaft-tolerance, change from:#shaft-grade, change from:#fit-system-select"
                             >
                         </div>
                     </div>
@@ -185,14 +197,14 @@
                             </div>
                             <div style="display: flex; flex-direction: row;">
                                 <div style="flex: 1; padding-right: 20px;">Passungsart</div>
-                                <div id="fit-type" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">Spielpassung</div>
+                                <div id="fit-type-msg" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">Spielpassung</div>
                                 <div style="flex: 1; padding-right: 20px;">Passungssystem</div>
-                                <div id="fit-system" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">Einheitsbohrung</div>
+                                <div id="fit-type-system-msg" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">Einheitsbohrung</div>
                             </div>
                         </div>            
                     </div> <!-- Card Footer -->
             </div> <!-- card -->
 </div> <!-- card -->
 
-<script type="text/javascript" src="{% static 'js/calculation.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/fits_calculation.js' %}"></script>
 

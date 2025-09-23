@@ -1,0 +1,119 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+.report-section {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin: 20px 0;
+    padding: 20px;
+}
+
+.section-header {
+    background: #f8f9fa;
+    padding: 15px;
+    margin: -20px -20px 20px -20px;
+    border-bottom: 1px solid #ddd;
+    border-radius: 5px 5px 0 0;
+}
+
+.duplicate-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+}
+
+.duplicate-table th,
+.duplicate-table td {
+    border: 1px solid #ddd;
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.duplicate-table th {
+    background: #e9ecef;
+    font-weight: bold;
+}
+
+.count-badge {
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-weight: bold;
+}
+
+.count-high { background: #f8d7da; color: #721c24; }
+.count-medium { background: #fff3cd; color: #856404; }
+.count-low { background: #d1edff; color: #155724; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="report-section">
+    <h1>📊 Detaillierter Duplikat-Report</h1>
+    
+    <div style="margin: 20px 0;">
+        <a href="{% url 'admin:isotolerance_find_duplicates' %}" class="btn btn-primary">
+            ← Zurück zur einfachen Ansicht
+        </a>
+        <a href="../" class="btn btn-warning">
+            ← Zurück zur Übersicht
+        </a>
+    </div>
+
+    {% for section_key, section_data in duplicates.items %}
+    <div class="report-section">
+        <div class="section-header">
+            <h2>{{ section_data.description }}</h2>
+            <span class="count-badge {% if section_data.count > 10 %}count-high{% elif section_data.count > 5 %}count-medium{% else %}count-low{% endif %}">
+                {{ section_data.count }} Gruppen gefunden
+            </span>
+        </div>
+        
+        {% if section_data.data %}
+        <table class="duplicate-table">
+            <thead>
+                <tr>
+                    <th>Nominalgröße min</th>
+                    <th>Nominalgröße max</th>
+                    <th>Toleranzklasse</th>
+                    <th>Toleranzgrad</th>
+                    <th>Toleranz min</th>
+                    <th>Toleranz max</th>
+                    <th>Anzahl Duplikate</th>
+                    <th>Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in section_data.data %}
+                <tr>
+                    <td>{{ item.nominal_size_min }}</td>
+                    <td>{{ item.nominal_size_max }}</td>
+                    <td>{{ item.tolerance_class }}</td>
+                    <td>{{ item.tolerance_grade }}</td>
+                    <td>{{ item.tolerance_min }}</td>
+                    <td>{{ item.tolerance_max }}</td>
+                    <td>
+                        <span class="count-badge count-high">{{ item.count }}</span>
+                    </td>
+                    <td>
+                        <a href="../?nominal_size_min={{ item.nominal_size_min }}&nominal_size_max={{ item.nominal_size_max }}&tolerance_class={{ item.tolerance_class }}&tolerance_grade={{ item.tolerance_grade }}"
+                           class="btn btn-primary" style="padding: 5px 10px; font-size: 12px;">
+                            Anzeigen
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="text-align: center; padding: 20px; color: #666;">
+            Keine Duplikate in dieser Kategorie gefunden.
+        </p>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

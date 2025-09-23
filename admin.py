@@ -9,6 +9,7 @@ from django.utils.html import format_html
 from django.urls import reverse
 import pandas as pd
 from io import BytesIO
+from django.db.models import Count
 from .models import ISOToleranceITClass, ISOToleranceClass
 from .constants import TOLERANCE_CLASSES
 from django.utils import timezone
@@ -43,7 +44,7 @@ class ISOToleranceITClassAdmin(admin.ModelAdmin):
     search_fields = ('tolerance_class', 'tolerance_value')
     ordering = ('tolerance_class', 'nominal_size_min', 'nominal_size_max')
     actions = ['import_from_excel']
-    change_list_template = 'admin/ittolerances.html'
+    change_list_template = 'fits/admin/it-tolerances.html'
     required_columns = dict(
             nominal_size_min  = 'Nennmaß min [mm]',
             nominal_size_max  = 'Nennmaß max [mm]',
@@ -79,6 +80,346 @@ class ISOToleranceITClassAdmin(admin.ModelAdmin):
         return obj.description[:50] + '...' if obj.description and len(obj.description) > 50 else obj.description
     description_short.short_description = 'Beschreibung'
 
+from django.contrib import admin
+from django.db.models import Q
+from .models import ISOToleranceClass
+
+class NominalSizeFilter(admin.SimpleListFilter):
+    """Filter für Nominalweiten-Bereiche bis 3100 mm"""
+    title = 'Nominalweite [mm]'
+    parameter_name = 'nominal_size'
+
+    def lookups(self, request, model_admin):
+        return [
+            ('0-3', '0 - 3 mm'),
+            ('3-6', '3 - 6 mm'),
+            ('6-10', '6 - 10 mm'),
+            ('10-18', '10 - 18 mm'),
+            ('18-30', '18 - 30 mm'),
+            ('30-50', '30 - 50 mm'),
+            ('50-80', '50 - 80 mm'),
+            ('80-120', '80 - 120 mm'),
+            ('120-180', '120 - 180 mm'),
+            ('180-250', '180 - 250 mm'),
+            ('250-315', '250 - 315 mm'),
+            ('315-400', '315 - 400 mm'),
+            ('400-500', '400 - 500 mm'),
+            ('500-630', '500 - 630 mm'),
+            ('630-800', '630 - 800 mm'),
+            ('800-1000', '800 - 1000 mm'),
+            ('1000-1250', '1000 - 1250 mm'),
+            ('1250-1600', '1250 - 1600 mm'),
+            ('1600-2000', '1600 - 2000 mm'),
+            ('2000-2500', '2000 - 2500 mm'),
+            ('2500-3100', '2500 - 3100 mm'),
+            ('3100-9999', 'über 3100 mm'),
+        ]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            min_val, max_val = self.value().split('-')
+            return queryset.filter(
+                nominal_size_min__gte=float(min_val),
+                nominal_size_max__lte=float(max_val)
+            )
+        return queryset
+
+class ToleranceClassFilter(admin.SimpleListFilter):
+    """Filter für Passungsarten (Spielpassung, Übermaßpassung, Übergangspassung)"""
+    title = 'Passungsart'
+    parameter_name = 'passungsart'
+
+    def lookups(self, request, model_admin):
+        return [
+            ('spiel', 'Spielpassung (H/h)'),
+            ('uebermass', 'Übermaßpassung (P/p, S/s)'),
+            ('uebergang', 'Übergangspassung (K/k, M/m, N/n)'),
+            ('wellen', 'Wellentoleranzen (kleinbuchstaben)'),
+            ('bohrungen', 'Bohrungstoleranzen (großbuchstaben)'),
+        ]
+
+    def queryset(self, request, queryset):
+        if self.value() == 'spiel':
+            return queryset.filter(Q(tolerance_class__in=['H', 'h']))
+        elif self.value() == 'uebermass':
+            return queryset.filter(Q(tolerance_class__in=['P', 'p', 'S', 's']))
+        elif self.value() == 'uebergang':
+            return queryset.filter(Q(tolerance_class__in=['K', 'k', 'M', 'm', 'N', 'n']))
+        elif self.value() == 'wellen':
+            return queryset.filter(tolerance_class__regex=r'^[a-z]+$')
+        elif self.value() == 'bohrungen':
+            return queryset.filter(tolerance_class__regex=r'^[A-Z]+$')
+        return queryset
+
+@admin.register(ISOToleranceClass)
+class ISOToleranceClassAdmin(admin.ModelAdmin):
+    change_list_template = 'fits/admin/isotolerances.html'
+    actions = ['mark_as_verified', 'delete_duplicates']
+    
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                'find-duplicates/',
+                self.admin_site.admin_view(self.find_duplicates_view),
+                name='isotolerance_find_duplicates',
+            ),
+            path(
+                'duplicates-report/',
+                self.admin_site.admin_view(self.duplicates_report_view),
+                name='isotolerance_duplicates_report',
+            ),
+        ]
+        return custom_urls + urls
+    
+    list_display = [
+        'tolerance_display',
+        'nominal_range_display', 
+        'tolerance_range_display',
+        'tolerance_grade',
+        'created_at',
+        'updated_at'
+    ]
+    
+    list_filter = [
+        'tolerance_class',
+        'tolerance_grade', 
+        NominalSizeFilter,
+        ToleranceClassFilter,
+        'standards',
+        'created_at'
+    ]
+    
+    search_fields = [
+        'tolerance_class',
+        'tolerance_grade',
+        'description',
+        'nominal_size_min',
+        'nominal_size_max'
+    ]
+    
+    readonly_fields = [
+        'created_at',
+        'updated_at',
+        'created_by', 
+        'updated_by',
+        'duplicate_info'
+    ]
+        
+    fieldsets = (
+        ('Grundinformationen', {
+            'fields': (
+                'standards',
+                'tolerance_class', 
+                'tolerance_grade',
+                'description'
+            )
+        }),
+        ('Nominalmaße', {
+            'fields': (
+                ('nominal_size_min', 'nominal_size_max'),
+            )
+        }),
+        ('Toleranzen', {
+            'fields': (
+                ('tolerance_min', 'tolerance_max'),
+            ),
+            'description': 'Toleranzen in µm'
+        }),
+        ('Duplikat-Info', {
+            'fields': ('duplicate_info',),
+            'classes': ('collapse',),
+            'description': 'Informationen über mögliche Duplikate'
+        }),
+        ('Metadaten', {
+            'fields': (
+                ('created_at', 'updated_at'),
+                ('created_by', 'updated_by')
+            ),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def find_duplicates_view(self, request):
+        """View für die Duplikatsuche"""
+        duplicates = self.find_duplicates()
+        
+        context = {
+            'title': 'Duplikatsuche - ISO Toleranzen',
+            'duplicates': duplicates,
+            'total_duplicates': sum(len(items) for items in duplicates.values()),
+            'opts': self.model._meta,
+        }
+        return render(request, 'fits/admin/duplicates_report.html', context)
+    
+    def duplicates_report_view(self, request):
+        """View für detaillierten Duplikat-Report"""
+        duplicates = self.find_detailed_duplicates()
+        
+        context = {
+            'title': 'Detaillierter Duplikat-Report',
+            'duplicates': duplicates,
+            'opts': self.model._meta,
+        }
+        return render(request, 'fits/admin/detailed_duplicates.html', context)
+    
+    def find_duplicates(self):
+        """Finde Duplikate basierend auf den unique_together Feldern"""
+        
+        # Gruppiere nach den unique_together Feldern
+        duplicates = (ISOToleranceClass.objects.values(
+            'nominal_size_min', 
+            'nominal_size_max', 
+            'tolerance_class', 
+            'tolerance_grade'
+        ).annotate(
+            count=Count('id')
+        ).filter(
+            count__gt=1
+        ).order_by('-count'))
+        
+        result = {}
+        for dup in duplicates:
+            key = f"{dup['nominal_size_min']}-{dup['nominal_size_max']}mm {dup['tolerance_class']}{dup['tolerance_grade']}"
+            items = ISOToleranceClass.objects.filter(
+                nominal_size_min=dup['nominal_size_min'],
+                nominal_size_max=dup['nominal_size_max'],
+                tolerance_class=dup['tolerance_class'],
+                tolerance_grade=dup['tolerance_grade']
+            )
+            result[key] = items
+        
+        return result
+    
+    def find_detailed_duplicates(self):
+        """Detaillierte Duplikatsuche mit verschiedenen Kriterien"""
+        results = {}
+        
+        # 1. Exakte Duplikate (alle Felder gleich)
+        exact_dupes = (ISOToleranceClass.objects.values(
+            'nominal_size_min', 'nominal_size_max', 'tolerance_class', 
+            'tolerance_grade', 'tolerance_min', 'tolerance_max'
+        ).annotate(count=Count('id')).filter(count__gt=1))
+        
+        results['exact_duplicates'] = {
+            'description': 'Exakte Duplikate (alle Felder identisch)',
+            'data': exact_dupes,
+            'count': len(exact_dupes)
+        }
+        
+        # 2. Duplikate mit gleichen Toleranzen aber unterschiedlichen Beschreibungen
+        tolerance_dupes = (ISOToleranceClass.objects.values(
+            'nominal_size_min', 'nominal_size_max', 'tolerance_class', 
+            'tolerance_grade', 'tolerance_min', 'tolerance_max'
+        ).annotate(
+            count=Count('id'),
+            desc_count=Count('description', distinct=True)
+        ).filter(count__gt=1, desc_count__gt=1))
+        
+        results['tolerance_duplicates'] = {
+            'description': 'Duplikate mit unterschiedlichen Beschreibungen',
+            'data': tolerance_dupes,
+            'count': len(tolerance_dupes)
+        }
+        
+        # 3. Potentielle Duplikate (gleiche Größe und Toleranzklasse)
+        potential_dupes = (ISOToleranceClass.objects.values(
+            'nominal_size_min', 'nominal_size_max', 'tolerance_class', 'tolerance_grade'
+        ).annotate(count=Count('id')).filter(count__gt=1))
+        
+        results['potential_duplicates'] = {
+            'description': 'Potentielle Duplikate (gleiche Größe und Toleranzklasse)',
+            'data': potential_dupes,
+            'count': len(potential_dupes)
+        }
+        
+        return results
+    
+    def is_duplicate_flag(self, obj):
+        """Zeige an ob ein Eintrag ein Duplikat ist"""
+        duplicates = self.find_duplicates()
+        for key, items in duplicates.items():
+            if obj in items:
+                return '✅ Duplikat'
+        return '❌ Eindeutig'
+    is_duplicate_flag.short_description = 'Duplikat Status'
+    
+    def duplicate_info(self, obj):
+        """Zeige Duplikat-Informationen im Edit-Formular"""
+        duplicates = self.find_duplicates()
+        duplicate_groups = []
+        
+        for key, items in duplicates.items():
+            if obj in items:
+                duplicate_groups.append(key)
+        
+        if duplicate_groups:
+            html = '<div style="background: #fff3cd; padding: 10px; border: 1px solid #ffeaa7; border-radius: 4px;">'
+            html += '<strong>⚠️ Dieser Eintrag ist ein Duplikat:</strong><br>'
+            for group in duplicate_groups:
+                html += f'• {group}<br>'
+            html += '</div>'
+            return html
+        else:
+            return '<span style="color: green;">✅ Dieser Eintrag ist eindeutig</span>'
+    duplicate_info.allow_tags = True
+    duplicate_info.short_description = 'Duplikat Information'
+    
+    def mark_as_verified(self, request, queryset):
+        """Action zum Markieren von Einträgen als verifiziert"""
+        updated = queryset.update(description=models.F('description') + " [VERIFIED]")
+        self.message_user(
+            request, 
+            f'{updated} Einträge wurden als verifiziert markiert.', 
+            messages.SUCCESS
+        )
+    mark_as_verified.short_description = "Markiere ausgewählte Einträge als verifiziert"
+    
+    def delete_duplicates(self, request, queryset):
+        """Action zum Löschen von Duplikaten"""
+        # Hier könnte eine Logik zum intelligenten Löschen von Duplikaten implementiert werden
+        # Zum Beispiel: Behalte den ältesten Eintrag, lösche die anderen
+        
+        count = 0
+        for obj in queryset:
+            # Einfache Implementierung - in der Praxis würde man hier intelligenter vorgehen
+            obj.delete()
+            count += 1
+            
+        self.message_user(
+            request, 
+            f'{count} Einträge wurden gelöscht.', 
+            messages.SUCCESS
+        )
+    delete_duplicates.short_description = "Lösche ausgewählte Duplikate"
+
+
+    def tolerance_display(self, obj):
+        return f"{obj.tolerance_class}{obj.tolerance_grade}"
+    tolerance_display.short_description = 'Toleranz'
+    tolerance_display.admin_order_field = 'tolerance_class'
+    
+    def nominal_range_display(self, obj):
+        return f"{obj.nominal_size_min} - {obj.nominal_size_max} mm"
+    nominal_range_display.short_description = 'Nominalbereich [mm]'
+    nominal_range_display.admin_order_field = 'nominal_size_min'
+    
+    def tolerance_range_display(self, obj):
+        return f"{obj.tolerance_min} - {obj.tolerance_max} µm"
+    tolerance_range_display.short_description = 'Toleranzbereich [µm]'
+    tolerance_range_display.admin_order_field = 'tolerance_min'
+    
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.created_by = request.user.username
+        obj.updated_by = request.user.username
+        super().save_model(request, obj, form, change)
+    
+    list_per_page = 100  # Mehr Einträge für große Tabellen
+    ordering = ['nominal_size_min', 'tolerance_class', 'tolerance_grade']
+    show_facets = admin.ShowFacets.ALWAYS
+
+"""
 @admin.register(ISOToleranceClass)
 class ISOToleranceClassAdmin(admin.ModelAdmin):
     list_display = ('__str__',  'tolerance_min', 'tolerance_max', 'description')
@@ -91,7 +432,7 @@ class ISOToleranceClassAdmin(admin.ModelAdmin):
     list_select_related = True
     actions = ['import_from_excel']
     add_form = ImportISOForm
-    change_list_template = 'admin/isotolerances.html'
+    change_list_template = 'fits/admin/isotolerances.html'
     required_columns = dict(
             nominal_size_min  = 'Nennmaß min [mm]',
             nominal_size_max  = 'Nennmaß max [mm]',
@@ -100,18 +441,7 @@ class ISOToleranceClassAdmin(admin.ModelAdmin):
             tolerance_min     = 'Unteres Grenzmaß [µm]',
             description       = 'Beschreibung (optional)',
         )
-        # def get(self, request, *args, **kwargs):
-        #     """
-        #     Handles GET requests for the admin view.
-        #     """
-        #     context = self.admin_site.each_context(request)
-        #     context.update({
-        #         'opts': self.model._meta,
-        #         'title': 'ISO Tolerance Classes',
-        #         'template_columns': ISOToleranceClass.objects.all(),
-        #     })
-        #     return render(request, 'admin/isotolerances.html', context)
-
+    
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         
@@ -295,7 +625,7 @@ class ISOToleranceClassAdmin(admin.ModelAdmin):
             'allow_overwrite': True
             }
         })
-        return render(request, 'admin/import_iso.html', context)
+        return render(request, 'fits/admin/import_iso.html', context)
         
     @classmethod
     def export_to_excel(cls, queryset):
@@ -366,4 +696,5 @@ class ISOToleranceClassAdmin(admin.ModelAdmin):
             'opts': self.model._meta,
             'title': 'Purge All ISO Tolerance Class Data',
         })
-        return render(request, 'admin/purge_confirmation.html', context)
+        return render(request, 'fits/admin/purge_confirmation.html', context)
+"""    

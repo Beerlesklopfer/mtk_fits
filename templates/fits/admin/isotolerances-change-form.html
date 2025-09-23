@@ -1,0 +1,162 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+.tolerance-preview {
+    background: #f9f9f9;
+    padding: 15px;
+    margin: 15px 0;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+}
+
+.tolerance-preview h3 {
+    margin-top: 0;
+    color: #333;
+}
+
+.tolerance-values {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin: 15px 0;
+}
+
+.tolerance-value-box {
+    background: white;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    text-align: center;
+}
+
+.tolerance-value-box strong {
+    display: block;
+    font-size: 1.2em;
+    color: #417690;
+}
+
+.nominal-size-display {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #333;
+    text-align: center;
+    margin: 10px 0;
+}
+
+.field-group {
+    background: #f0f0f0;
+    padding: 10px;
+    margin: 10px 0;
+    border-left: 4px solid #417690;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tolerance-preview">
+    <h3>🔧 Toleranz Vorschau</h3>
+    {% if original %}
+    <div class="nominal-size-display">
+        {{ original.tolerance_class }}{{ original.tolerance_grade }} 
+        für {{ original.nominal_size_min }} - {{ original.nominal_size_max }} mm
+    </div>
+    <div class="tolerance-values">
+        <div class="tolerance-value-box">
+            <strong>Unteres Abmaß (EI)</strong>
+            {{ original.tolerance_min }} µm
+        </div>
+        <div class="tolerance-value-box">
+            <strong>Oberes Abmaß (ES)</strong>
+            {{ original.tolerance_max }} µm
+        </div>
+        <div class="tolerance-value-box">
+            <strong>Toleranzbreite</strong>
+            {{ original.tolerance_range }} µm
+        </div>
+    </div>
+    {% else %}
+    <p>Vorschau erscheint nach dem Speichern</p>
+    {% endif %}
+</div>
+
+{{ block.super }}
+{% endblock %}
+
+{% block field_sets %}
+{% for fieldset in adminform %}
+    <div class="fieldset{% if fieldset.name %} fieldset-{{ fieldset.name|slugify }}{% endif %}">
+        {% if fieldset.name %}<div class="field-group">{{ fieldset.name }}</div>{% endif %}
+        {% if fieldset.description %}
+            <div class="description">{{ fieldset.description|safe }}</div>
+        {% endif %}
+        <div class="fields">
+            {% for line in fieldset %}
+                <div class="form-row{% if line.fields|length_is:'1' and line.errors %} errors{% endif %}{% if not line.has_visible_field %} hidden{% endif %}{% for field in line %}{% if field.field.name %} field-{{ field.field.name }}{% endif %}{% endfor %}">
+                    {% if line.fields|length_is:'1' %}{{ line.errors }}{% endif %}
+                    {% for field in line %}
+                        <div{% if not line.fields|length_is:'1' %} class="fieldBox{% if field.field.name %} field-{{ field.field.name }}{% endif %}{% if not field.is_readonly and field.errors %} errors{% endif %}{% if field.field.is_hidden %} hidden{% endif %}"{% elif field.is_checkbox %} class="checkbox-row"{% endif %}>
+                            {% if not line.fields|length_is:'1' and not field.is_readonly %}{{ field.errors }}{% endif %}
+                            {% if field.is_checkbox %}
+                                {{ field.field }}{{ field.label_tag }}
+                            {% else %}
+                                {{ field.label_tag }}
+                                {% if field.is_readonly %}
+                                    <div class="readonly">{{ field.contents }}</div>
+                                {% else %}
+                                    {{ field.field }}
+                                {% endif %}
+                            {% endif %}
+                            {% if field.field.help_text %}
+                                <div class="help">{{ field.field.help_text|safe }}</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endfor %}
+{% endblock %}
+
+{% block admin_change_form_document_ready %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Live preview update for tolerance values
+    function updateTolerancePreview() {
+        const toleranceClass = document.getElementById('id_tolerance_class').value;
+        const toleranceGrade = document.getElementById('id_tolerance_grade').value;
+        const sizeMin = document.getElementById('id_nominal_size_min').value;
+        const sizeMax = document.getElementById('id_nominal_size_max').value;
+        
+        if (toleranceClass && toleranceGrade && sizeMin && sizeMax) {
+            const preview = document.querySelector('.tolerance-preview');
+            if (preview) {
+                preview.innerHTML = `
+                    <h3>🔧 Toleranz Vorschau</h3>
+                    <div class="nominal-size-display">
+                        ${toleranceClass}${toleranceGrade} für ${sizeMin} - ${sizeMax} mm
+                    </div>
+                    <p><em>Vorschau - Werte werden nach Speichern angezeigt</em></p>
+                `;
+            }
+        }
+    }
+    
+    // Add event listeners for live updates
+    ['id_tolerance_class', 'id_tolerance_grade', 'id_nominal_size_min', 'id_nominal_size_max'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('change', updateTolerancePreview);
+            element.addEventListener('keyup', updateTolerancePreview);
+        }
+    });
+    
+    // Initial update
+    updateTolerancePreview();
+});
+</script>
+{% endblock %}
