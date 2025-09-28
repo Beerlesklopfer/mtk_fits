@@ -3,25 +3,32 @@ from tkinter import font
 from urllib import request
 from django.views import View
 from django.shortcuts import render, redirect
-from django.http import  HttpResponse, JsonResponse
+from django.http import  HttpResponse, JsonResponse, FileResponse
 from django.views.decorators.http import require_GET
 from django.shortcuts import get_object_or_404
 from django_htmx.http import trigger_client_event
+from sqlalchemy import case
 from .models import ISOToleranceITClass, ISOToleranceClass
+from django.conf import settings    
 from main.models import Standards
 from django.db.models import F, IntegerField, FloatField, BooleanField
 from django.db.models.functions import Substr, Cast,  StrIndex
 from django.views.generic import TemplateView
 from django.views.decorators.csrf import csrf_exempt
-import logging
-import json
-import base64
+from django.template.loader import render_to_string
+import logging, json, base64
 from io import BytesIO
 from math import pi, cos, sin
 from PIL import Image, ImageDraw, ImageFont
 from main.mixins import AppTemplateMixin
+from django.conf import settings
+from math import sin, radians
 
-logging.basicConfig(level=logging.DEBUG)
+if  getattr(settings, 'DEBUG', True):
+    logging.basicConfig(level=logging.DEBUG)
+else:
+    logging.basicConfig(level=logging.INFO)
+
 logger = logging.getLogger(__name__)
 
 class FitsService:
@@ -38,7 +45,7 @@ class FitsService:
     - __init__: Initialisiert den FitsService mit den übergebenen Parametern oder Standardwerten.
     - get_tolerancesIT: Gibt die Toleranz-IT-Klassen und -werte für eine angegebene Nennmaß zurück.
     - get_tolerances: Ermittelt und bereitet die Toleranzklassen für Bohrung und Welle basierend auf dem angegebenen Nennmaß vor.
-    - get_grades: Gibt die verfügbaren Toleranzgrade für Bohrung oder Welle basierend auf der ausgewählten Toleranzklasse und der Nennmaß zurück.
+    - get_deviations: Gibt die verfügbaren Toleranzgrade für Bohrung oder Welle basierend auf der ausgewählten Toleranzklasse und der Nennmaß zurück.
     - get_values: Gibt die Toleranzwerte für die ausgewählte Toleranzklasse und den ausgewählten Toleranzgrad zurück.
     - get_limit_deviations: Berechnet und setzt die Grenzabmaße für Bohrung und Welle basierend auf Nennmaß, Grundtoleranz und Grenzabmaßen.
     - draw_image: Erstellt eine technische Zeichnung der Passung basierend auf den aktuellen Bohrungs- und Wellenparametern.    
@@ -46,57 +53,51 @@ class FitsService:
 
     # Daten für die Bohrung
     Bore = {
-        'tolerances' : '',
-        'selected_tolerance'  : '',
+        'nominal_size': float(0.0),  # Nennmaß
+        'tolerances' : [],
+        'selected_tolerance'  : 'H',
         'values': {
             'ES': float(-1.0),     #   oberes Grundabmaß
             'EI': float(-1.0),     #   unteres Grundabmaß
         },
         'results': {
-            'D': float(-1.0),      #   Durchmesser
-            'ES': float(-1.0),     #   oberes Grundabmaß
-            'EI': float(-1.0),     #   unteres Grundabmaß
-            'IT': float(-1.0),     #   Toleranzgrade
+            'ULS': float(-1.0),     #   oberes Grundabmaß
+            'LLS': float(-1.0),     #   unteres Grundabmaß
             'T' : float(-1.0),     #   Toleranz T = ES - EI
-            'D_max': float(-1.0),  #   maximaler Durchmesser D + ES
-            'D_min': float(-1.0),  #   minimaler Durchmesser D - EI
         },
-        'grades': [],
-        'selected_grade': '',
+        'deviations': [],
+        'selected_deviation': '7',
     }
 
     # Daten für die Welle
     Shaft = {
+        'nominal_size': float(0.0),  # Nennmaß
         'tolerances': [],
-        'selected_tolerance': '',
+        'selected_tolerance': 'h',
         'values': {
             'es': float(-1.0),     #   oberes Grundabmaß
             'ei': float(-1.0),     #   unteres Grundabmaß
         },
         'results': {
-            'Dd': float(-1.0),     #   Durchmesser
-            'es': float(-1.0),     #   oberes Grundabmaß
-            'ei': float(-1.0),     #   unteres Grundabmaß
-            'it': float(-1.0),     #   Toleranzgrad
+            'uls': float(-1.0),    #   oberes Grundabmaß
+            'lls': float(-1.0),    #   unteres Grundabmaß
             't' : float(-1.0),     #   Toleranz T = ES - EI
-            'd_max': float(-1.0),  #   maximaler Durchmesser D + ES
-            'd_min': float(-1.0),  #   minimaler Durchmesser D - EI
         },
-        'grades': [],
-        'selected_grade': '',
+        'deviations': [],
+        'selected_deviation': '7',
     }
 
     # Toleranzen für die Passung
     Tolerance = {
         # 'tolerances' : request.session.get('fit_Tolerance')['tolerances'] if 'fit_Tolerance' in request.session else [],
-        'nominal_size': float(0.0),  # Nennmaß
-        'grades' : [],                # Toleranzklassen für die IT-Klassen
+        'nominal_size': float(0.0),   # Nennmaß
+        'deviations' : [],            # Toleranzklassen für die IT-Klassen
         'values' : [],                # Toleranzwerte für die IT-Klassen
         'selected_tolerance': 0.0,    # ausgewählte Grundtoleranz IT
         's_min': float(-1.0),         # Mindestspiel
         's_max': float(-1.0),         # Höchstspiel
-        'fit-type-msg': '',           # Passungsart: clearance, transition, interference
-        'fit-type-system-msg': 'hole',# Passungssystem, entweder 'combined', 'hole' oder 'shaft'
+        'fit-type': '',               # Passungsart: clearance, transition, interference
+        'fit_system': 'bore',         # Passungssystem, entweder 'combined', 'hole' oder 'shaft'
     
     }
 
@@ -131,9 +132,9 @@ class FitsService:
         # Validierung des Nennmaßes
         if self.Tolerance.get('nominal_size') is None:
             raise ValueError("Nennmaß ist erforderlich")
-        elif self.Tolerance.get('nominal_size') < 0:
+        elif float(self.Tolerance.get('nominal_size')) < 0:
             raise ValueError("Nennmaß muss positiv sein")
-        elif self.Tolerance.get('nominal_size') > 31500:
+        elif float(self.Tolerance.get('nominal_size')) > 31500:
             raise ValueError("Nennmaß muss kleiner oder gleich 31500 sein")
 
     def get_tolerancesIT(self, nominal_size):
@@ -143,12 +144,12 @@ class FitsService:
             nominal_size (float oder None): Das Nennmaß, für das die Toleranzen abgefragt werden sollen.
                                             Falls None, wird self.Tolerance['nominal_size'] verwendet.
         Rückgabe:
-            dict: Ein Dictionary mit den Schlüsseln 'grades' (Liste der Toleranzklassen) und
+            dict: Ein Dictionary mit den Schlüsseln 'deviations' (Liste der Toleranzklassen) und
                   'values' (Liste der Toleranzwerte) für das angegebene Nennmaß.
         """
 
         qry_tolerances = ISOToleranceITClass.objects.all(nominal_size or self.Tolerance.get('nominal_size', -1.0))
-        self.Tolerance['grades'] = list(qry_tolerances.values_list('tolerance_class', flat=True))
+        self.Tolerance['deviations'] = list(qry_tolerances.values_list('tolerance_class', flat=True))
         self.Tolerance['values'] = list(qry_tolerances.values_list('tolerance_value', flat=True))
         return self.Tolerance
 
@@ -167,7 +168,8 @@ class FitsService:
             ValueError: Wird ausgelöst, wenn keine Toleranzklassen für das angegebene Nennmaß gefunden werden.
         """
 
-        self.Tolerance['nominal_size'] = nominal_size if nominal_size is not None else self.Tolerance.get('nominal_size', 0.0)
+        # wenn kein Wert übergeben wurde, dann verwende den gespeicherten Wert
+        self.Tolerance['nominal_size'] = float(nominal_size) if nominal_size is not None else float(self.Tolerance.get('nominal_size', 0.0))
         qry_set = ISOToleranceClass.objects.all(nominal_size or self.Tolerance.get('nominal_size', -1.0), isBore=True)
         self.Bore['tolerances'] = list(qry_set.values_list('tolerance_class', flat=True))
         # Entferne alle Zahlen aus den Toleranzklassen
@@ -186,8 +188,8 @@ class FitsService:
             raise ValueError(f"Keine Wellentoleranzen für Nennmaß {self.Tolerance['nominal_size']} mm gefunden")
 
         return self.Bore, self.Shaft
-    
-    def get_grades(self, isBore=True):
+
+    def get_deviations(self, tolerance_class=None, isBore=True):
         """
         Gibt die verfügbaren Toleranzgrade für Bohrung oder Welle basierend auf der ausgewählten Toleranzklasse und der Nennmaß zurück.
         Args:
@@ -199,83 +201,77 @@ class FitsService:
             list: Eine sortierte Liste der verfügbaren Toleranzgrade (nur Buchstaben) für die ausgewählte Bohrung oder Welle.
         """
 
-        tolerance_class = ''
+        print( f"\033[94mDEBUG: Getting bore deviations for nominal size {self.Tolerance.get('nominal_size', -1.0)} mm and tolerance class {self.Bore.get('selected_tolerance', '')}\033[0m")
         if isBore:
-            print( f"\033[94mDEBUG: Getting bore grades for nominal size {self.Tolerance.get('nominal_size', -1.0)} mm and tolerance class {self.Bore.get('selected_tolerance', '')}\033[0m")
-            if self.Bore.get('selected_tolerance') is None or self.Bore.get('selected_tolerance') == '':
-                raise ValueError("No bore tolerance selected")
-            tolerance_class=self.Bore['selected_tolerance']
+            if self.Bore.get('selected_tolerance', tolerance_class if tolerance_class is not None else None) is None or self.Bore.get('selected_tolerance') == '':
+                raise ValueError("Keine Bohrungstoleranz ausgewählt (Buchstabe)")
         else:
             if self.Shaft.get('selected_tolerance') is None or self.Shaft.get('selected_tolerance') == '':
-                raise ValueError("No shaft tolerance selected")
-            tolerance_class=self.Shaft['selected_tolerance'] 
+                raise ValueError("Keine Wellentoleranz ausgewählt (Buchstabe)")
+
         # Hole die vorhandenen Toleranzgrade für die ausgewählte Toleranzklasse und Nennmaß 
-        result = ISOToleranceClass.objects.get_grades(
+        result = ISOToleranceClass.objects.get_deviations(
             nominal_size=self.Tolerance.get('nominal_size', -1.0),
-            tolerance=tolerance_class,
+            tolerance=self.Bore['selected_tolerance'] if isBore else self.Shaft['selected_tolerance'],
             isBore=isBore
             )
         if len(result) == 0:    
-            raise ValueError(f"No {'bore' if isBore else 'shaft'} grades found for nominal size {self.get('nominal_size', -1.0)} mm and tolerance class {tolerance_class}")
-        if isBore:
-            self.Bore['grades'] = result
-            if self.Bore.get('selected_grade') is not None and self.Bore.get('selected_grade') != '':
-                self.get_values(isBore=True)
-
-            return self.Bore['grades']
+            raise ValueError(f"No {'bore' if isBore else 'shaft'} deviations found for nominal size {self.get('nominal_size', -1.0)} mm and tolerance class {tolerance_class}")
         else:
-            self.Shaft['grades'] = result
-            if self.Shaft.get('selected_grade') is not None and self.Shaft.get('selected_grade') != '':
-                self.get_values(isBore=False)
-            return self.Shaft['grades']
+            # Bohrung
+            if isBore:
+                self.Bore['deviations'] = result
+                return self.Bore['deviations']
+            
+            # Welle
+            else:
+                self.Shaft['deviations'] = result
+                return self.Shaft['deviations']        
+        return None
 
-    def get_values(self, isBore=True):
+    def get_values(self, tolerance_class=None, tolerance_deviation=None, isBore=True):
         """
         Gibt die Toleranzwerte für die ausgewählte Toleranzklasse und den ausgewählten Toleranzgrad zurück.
         Args:
             isBore (bool, optional): Gibt an, ob die Toleranzwerte für eine Bohrung (True) oder eine Welle (False) abgefragt werden sollen. Standardwert ist True.
+            tolerance_class (str): Die Toleranzklasse, für die die Werte abgefragt werden sollen.
+            tolerance_deviation (str): Der Toleranzgrad, für den die Werte abgefragt werden sollen.
         Raises:
             ValueError: Wenn keine Toleranzklasse für Bohrung oder Welle ausgewählt wurde.
             ValueError: Wenn kein Toleranzgrad für die angegebene Nennmaß, Toleranzklasse und Toleranzgrad gefunden wurde.
         Returns:
             dict: Ein Dictionary mit den Schlüsseln 'tolerance_min' und 'tolerance_max', die die entsprechenden Toleranzwerte enthalten.
         """
-
-        tolerance_class = ''
-        tolerance_grade = ''
-        if isBore:
-            if self.Bore.get('selected_tolerance') is None or self.Bore.get('selected_tolerance') == '':
-                raise ValueError("Keine Bohrungstoleranz ausgewählt")
-            tolerance_class=self.Bore['selected_tolerance']
-            if self.Bore.get('selected_grade') is None or self.Bore.get('selected_grade') == '':
-                raise ValueError("Kein Bohrungs-Toleranzgrad ausgewählt")
-            tolerance_grade=self.Bore['selected_grade']
-        else:
-            if self.Shaft.get('selected_tolerance') is None or self.Shaft.get('selected_tolerance') == '':
-                raise ValueError("Keine Wellentoleranz ausgewählt")
-            tolerance_class=self.Shaft['selected_tolerance']  
-            if self.Shaft.get('selected_grade') is None or self.Shaft.get('selected_grade') == '':
-                raise ValueError("Kein Wellen-Toleranzgrad ausgewählt")
-            tolerance_grade=self.Shaft['selected_grade']  
         
         result = ISOToleranceClass.objects.get_value(
             nominal_size=self.Tolerance.get('nominal_size', -1.0),            
             tolerance_class=tolerance_class,
-            tolerance_grade=tolerance_grade
+            tolerance_deviation=tolerance_deviation
             )
-        if len(result) == 0:    
-            raise ValueError(f"No {'bore' if isBore else 'shaft'} values found for nominal size {self.Tolerance.get('nominal_size', -1.0)} mm, tolerance class {tolerance_class} and grade {tolerance_grade}")
+        if not isinstance(result, dict) or not result:
+            raise ValueError(f"Keine {'Bohrungs' if isBore else 'Wellen'}werte für Nennmaß {self.Tolerance.get('nominal_size', -1.0)} mm, Toleranzklasse {tolerance_class}{tolerance_deviation} gefunden")
         else:
-            print(f"\033[94mDEBUG: Found values for {'bore' if isBore else 'shaft'}: {result}\033[0m")
             if isBore:
-                self.Bore['values']['ES'] = result['tolerance_min'] if result['tolerance_min'] is not None else -1.0
-                self.Bore['values']['EI'] = result['tolerance_max'] if result['tolerance_max'] is not None else -1.0
-                return self.Bore['values']      
+                self.Bore['values']['ES']    = result['tolerance_min'] if result.get('tolerance_min') is not None else -1.0
+                self.Bore['values']['EI']    = result['tolerance_max'] if result.get('tolerance_max') is not None else -1.0
+                self.Bore['results']['ES']   = self.Bore['values']['ES']
+                self.Bore['results']['EI']   = self.Bore['values']['EI']
+                self.Bore['results']['T']    = self.Bore['values']['ES'] + self.Bore['values']['EI']
+                self.Bore['results']['ULS']  = round(self.Bore.get('nominal_size') + self.Bore['values']['ES'] / 1000.0, 3)
+                self.Bore['results']['LLS']  = round(self.Bore.get('nominal_size') + self.Bore['values']['EI'] / 1000.0, 3)
+                # logger.debug(f"\033[94mResult From Database {'bore' if isBore else 'shaft'}  {self.Bore['results']}\033[0m")
+                return self.Bore
             else:
-                self.Shaft['values']['es'] = result['tolerance_min'] if result['tolerance_min'] is not None else -1.0
-                self.Shaft['values']['ei'] = result['tolerance_max'] if result['tolerance_max'] is not None else -1.0
-                return self.Shaft['values']
-        
+                self.Shaft['values']['es']   = result['tolerance_max'] if result.get('tolerance_min') is not None else -1.0
+                self.Shaft['values']['ei']   = result['tolerance_min'] if result.get('tolerance_max') is not None else -1.0
+                self.Shaft['results']['es']  = self.Shaft['values']['es']
+                self.Shaft['results']['ei']  = self.Shaft['values']['ei']
+                self.Shaft['results']['t']   = self.Shaft['values']['es'] - self.Shaft['values']['ei']
+                self.Shaft['results']['uls'] = round(self.Shaft.get('nominal_size') + self.Shaft['values']['es'] / 1000.0 , 3)
+                self.Shaft['results']['lls'] = round(self.Shaft.get('nominal_size') + self.Shaft['values']['ei'] / 1000.0, 3)
+                # logger.debug(f"\033[94mResult From Database {'bore' if isBore else 'shaft'}  {self.Shaft['results']}\033[0m")
+                return self.Shaft
+            
     def get_limit_deviations(self):
         """
         Berechnet und setzt die Grenzabmaße für Bohrung und Welle basierend auf Nennmaß, Grundtoleranz und Grenzabmaßen.
@@ -290,93 +286,89 @@ class FitsService:
             None bei erfolgreichen Prüfungen,
             String mit Fehlermeldung bei Fehlern.
         """
-        def get_tolerance_value():
-            try:
-                self.Tolerance['s_min'] = float(self.Bore['results']['EI'] - self.Shaft['results']['es'])
-                self.Tolerance['s_max'] = float(self.Bore['results']['ES'] - self.Shaft['results']['ei'])
-                self.Tolerance['fit-type'] = 'clearance' if self.Tolerance['s_min'] > 0 else 'interference' if self.Tolerance['s_max'] < 0 else 'transition'
-            except Exception as e:
-                logger.error(f"Error retrieving tolerance value: {e}")
-                return (1010, f"Error retrieving tolerance value: {e}")
-
         # Wenn kein Nennmaß gesetzt wurde, dann beende mit Fehlermeldung
         if self.Tolerance['nominal_size'] is None or self.Tolerance['nominal_size'] <= 0:
             logger.error("Kein oder falsches Nennmaß vorhanden.")
-            return (1004, "Kein oder falsches Nennmaß vorhanden.")
+            raise ValueError("Kein oder falsches Nennmaß vorhanden.")
 
         # Wenn keine Grundtoleranz gewählt wurde, Verwende die Tabellen aus ISO 286-2
-        if self.Tolerance.get('use_iso_286_2', True) :
-            self.Bore['results']['EI'] = self.Bore['values']['EI'] if self.Bore['values']['EI'] is not None else -1.0
-            self.Bore['results']['ES'] = self.Bore['values']['ES'] if self.Bore['values']['ES'] is not None else -1.0
-            self.Shaft['results']['ei'] = self.Shaft['values']['ei'] if self.Shaft['values']['ei'] is not None else -1.0
-            self.Shaft['results']['es'] = self.Shaft['values']['es'] if self.Shaft['values']['es'] is not None else -1.0
-            get_tolerance_value()
-            return None
+        # self.Bore['results']['EI'] = self.Bore['values']['EI'] if self.Bore['values']['EI'] is not None else -1.0
+        # self.Bore['results']['ES'] = self.Bore['values']['ES'] if self.Bore['values']['ES'] is not None else -1.0
+        # self.Shaft['results']['ei'] = self.Shaft['values']['ei'] if self.Shaft['values']['ei'] is not None else -1.0
+        # self.Shaft['results']['es'] = self.Shaft['values']['es'] if self.Shaft['values']['es'] is not None else -1.0
 
         # Wenn keine Toleranzklasse für Bohrung gewählt wurde, dann beende mit Fehlermeldung
-        if self.Bore.get('selected_tolerance', None) is None or self.Bore.get('selected_tolerance', '') == '' \
-        or self.Bore.get('selected_grade', None) is None or self.Bore.get('selected_grade', '') == '':
-            logger.error("Keine Toleranzklasse für Bohrung gewählt.")
-            return (1002, "Keine Toleranzklasse für Bohrung gewählt. Bitte wählen Sie ein Toleranzklasse.")
+        # if self.Bore.get('selected_tolerance', None) is None or self.Bore.get('selected_tolerance', '') == '' \
+        # or self.Bore.get('selected_deviation', None) is None or self.Bore.get('selected_deviation', '') == '':
+        #     logger.error("Keine Toleranzklasse für Bohrung gewählt.")
+        #     return (1002, "Keine Toleranzklasse für Bohrung gewählt. Bitte wählen Sie ein Toleranzklasse.")
 
-        match self.Bore['selected_tolerance']:
-            case letter if letter in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'CD', 'EF', 'FG', ]:
-                self.Bore['results']['ES'] = self.Bore['values']['EI'] + float(self.Tolerance.get('selected_tolerance'))
-            case 'H':
-                self.Bore['results']['ES'] = float(self.Tolerance.get('selected_tolerance'))
-                self.Bore['results']['EI'] = 0
-            case 'JS':
-                self.Bore['results']['EI'] = -float(self.Tolerance.get('selected_tolerance')) / 2.0
-                self.Bore['results']['ES'] = float(self.Tolerance.get('selected_tolerance')) / 2.0
-            case 'J':
-                self.Bore['results']['EI'] = None
-                self.Bore['results']['ES'] = None
-            case 'K' | 'M' | 'N':
-                self.Bore['results']['EI'] = None
-                self.Bore['results']['ES'] = None
-            case letter if letter in ['P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'ZA', 'ZB', 'ZC']:
-                self.Bore['results']['EI'] = None
-                self.Bore['results']['ES'] = None
-            case _:
-                self.Bore['results']['EI'] = None
-                self.Bore['results']['ES'] = None
-                return (1004, "Keine Toleranzklasse für Bohrung gewählt. Bitte wählen Sie ein Toleranzklasse.")
+        # match self.Bore['selected_tolerance']:
+        #     case letter if letter in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'CD', 'EF', 'FG', ]:
+        #         self.Bore['results']['ES'] = self.Bore['values']['EI'] + float(self.Tolerance.get('selected_tolerance'))
+        #     case 'H':
+        #         self.Bore['results']['ES'] = float(self.Tolerance.get('selected_tolerance'))
+        #         self.Bore['results']['EI'] = 0
+        #     case 'JS':
+        #         self.Bore['results']['EI'] = -float(self.Tolerance.get('selected_tolerance')) / 2.0
+        #         self.Bore['results']['ES'] = float(self.Tolerance.get('selected_tolerance')) / 2.0
+        #     case 'J':
+        #         self.Bore['results']['EI'] = None
+        #         self.Bore['results']['ES'] = None
+        #     case 'K' | 'M' | 'N':
+        #         self.Bore['results']['EI'] = None
+        #         self.Bore['results']['ES'] = None
+        #     case letter if letter in ['P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'ZA', 'ZB', 'ZC']:
+        #         self.Bore['results']['EI'] = None
+        #         self.Bore['results']['ES'] = None
+        #     case _:
+        #         self.Bore['results']['EI'] = None
+        #         self.Bore['results']['ES'] = None
+        #         return (1004, "Keine Toleranzklasse für Bohrung gewählt. Bitte wählen Sie ein Toleranzklasse.")
 
         # Wenn keine Toleranzklasse für Welle gewählt wurde, dann beende mit Fehlermeldung
         if self.Shaft.get('selected_tolerance', None) is None or self.Shaft.get('selected_tolerance', '') == '' \
-        or self.Shaft.get('selected_grade', None) is None or self.Shaft.get('selected_grade', '') == '':
+        or self.Shaft.get('selected_deviation', None) is None or self.Shaft.get('selected_deviation', '') == '':
             logger.error("Keine Toleranzklasse für Welle gewählt.")
-            return (1005, "Keine Toleranzklasse für Welle gewählt. Bitte wählen Sie ein Toleranzklasse.")
+            raise ValueError("Keine Toleranzklasse für Welle gewählt. Bitte wählen Sie ein Toleranzklasse.")
 
         # Convert selected_tolerance to lowercase for consistent matching
-        selected_tolerance_lower = self.Bore['selected_tolerance'].lower() if self.Bore.get('selected_tolerance') else ''
+        # selected_tolerance_lower = self.Shaft['selected_tolerance'].lower() if self.Bore.get('selected_tolerance') else ''
 
-        match selected_tolerance_lower:
-            case letter if letter in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'cd', 'ef', 'fg']:
-                self.Shaft['results']['es'] = self.Shaft['values']['ei'] + float(self.Tolerance.get('selected_tolerance'))
-            case 'h':
-                self.Shaft['results']['es'] = 0
-                self.Shaft['results']['ei'] = -1.0*float(self.Tolerance.get('selected_tolerance'))
-            case 'js':
-                self.Shaft['results']['ei'] = -float(self.Tolerance.get('selected_tolerance')) / 2.0
-                self.Shaft['results']['es'] = float(self.Tolerance.get('selected_tolerance')) / 2.0
-            case 'j' | 'k' | 'm' | 'n':
-                self.Shaft['results']['ei'] = None
-                self.Shaft['results']['es'] = None
-            case letter if letter in ['p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'za', 'zb', 'zc']:
-                self.Shaft['results']['ei'] = None
-                self.Shaft['results']['es'] = None
-            case _:
-                self.Shaft['results']['ei'] = None
-                self.Shaft['results']['es'] = None
-                logger.error("Keine Toleranzklasse für Welle gewählt.")
-                raise ValueError("Keine Toleranzklasse für Welle gewählt. Bitte wählen Sie ein Toleranzklasse.")
+        # match selected_tolerance_lower:
+        #     case letter if letter in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'cd', 'ef', 'fg']:
+        #         self.Shaft['results']['es'] = self.Shaft['values']['ei'] + float(self.Tolerance.get('selected_tolerance'))
+        #     case 'h':
+        #         self.Shaft['results']['es'] = 0
+        #         self.Shaft['results']['ei'] = -1.0*float(self.Tolerance.get('selected_tolerance'))
+        #     case 'js':
+        #         self.Shaft['results']['ei'] = -float(self.Tolerance.get('selected_tolerance')) / 2.0
+        #         self.Shaft['results']['es'] = float(self.Tolerance.get('selected_tolerance')) / 2.0
+        #     case 'j' | 'k' | 'm' | 'n':
+        #         self.Shaft['results']['ei'] = None
+        #         self.Shaft['results']['es'] = None
+        #     case letter if letter in ['p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'za', 'zb', 'zc']:
+        #         self.Shaft['results']['ei'] = None
+        #         self.Shaft['results']['es'] = None
+        #     case _:
+        #         self.Shaft['results']['ei'] = None
+        #         self.Shaft['results']['es'] = None
+        #         logger.error("Keine Toleranzklasse für Welle gewählt.")
+        #         raise ValueError("Keine Toleranzklasse für Welle gewählt. Bitte wählen Sie ein Toleranzklasse.")
 
         # Zuletzt die Toleranzberechnung durchführen
-        get_tolerance_value()
+        try:
+            self.Tolerance['s_max'] = float(self.Bore['results']['ES'] - self.Shaft['results']['ei'])
+            self.Tolerance['s_min'] = float(self.Bore['results']['EI'] - self.Shaft['results']['es'])
+            self.Tolerance['fit_type'] = 'clearance' if self.Tolerance['s_min'] > 0 else 'interference' if self.Tolerance['s_max'] < 0 else 'transition'
+            # logger.debug(f"\033[94mCalculated fit type: {self.Tolerance['fit_type']} with s_min: {self.Tolerance['s_min']} and s_max: {self.Tolerance['s_max']}\033[0m")
+        except Exception as e:
+            logger.error(f"Fehler beim Berechnen der Toleranzwerte: {e}")
+            raise ValueError(f"Fehler beim Berechnen der Toleranzwerte: {e}")
+
         return None
     
-    def draw_image(self):    
+    def draw_image(self):
         """
         Erstellt eine technische Zeichnung der Passung basierend auf den aktuellen Bohrungs- und Wellenparametern.
         Die Zeichnung wird als PNG-Bild im base64-Format mit dem post "data:image/png;base64," Präfix zurückgegeben.
@@ -388,172 +380,347 @@ class FitsService:
             oder None, wenn ein Fehler aufgetreten ist.
         """
 
+        def draw_subscript(draw, x, y, text, font_main, font_sub, fill="black", subscript_offset=6):
+            """
+            Zeichnet Text mit optionalem Tiefstellen von Teilstrings, z.B. "s_min".
+            
+            - draw: ImageDraw.Draw Objekt
+            - x, y: Startkoordinaten für normalen Text
+            - text: String, z.B. "s_min" oder "s_max"
+            - font_main: Font für normalen Text
+            - font_sub: Font für Subscript
+            - fill: Farbe
+            - subscript_offset: Pixel nach unten für Tiefstellung
+            """
+            # Prüfen, ob "_" im Text vorhanden ist
+            if "_" in text:
+                text = text.split(" ")
+                # Tupple mit dem Unterstrich trennen
+                for i, t in enumerate(text):
+                    if "_" in t:
+                        main_text, sub_text = t.split("_", 1)
+                        # Normale Schrift zeichnen
+                        draw.text((x, y), main_text, fill=fill, font=font_main)
+                        # Breite und Höhe des normalen Textes ermitteln
+                        bbox = font_main.getbbox(main_text)
+                        w_main = bbox[2] - bbox[0]
+                        h_main = bbox[3] - bbox[1]
+                        # Subscript zeichnen, leicht nach unten versetzt
+                        draw.text((x + w_main, y + h_main + subscript_offset), text[i], fill=fill, font=font_sub)
+                        # x für den nächsten Text anpassen
+                        x += w_main + font_sub.getlength(text[i]) + font_main.getlength(" ")
+                    else:
+                        draw.text((x, y), t, fill=fill, font=font_main)
+                        bbox = font_main.getbbox(t)
+                        w_t = bbox[2] - bbox[0]
+                        x += w_t + font_main.getlength(" ")
+
         # Bild erstellen
         width, height = 1000, 700
-        img = Image.new('RGB', (width, height), 'white')
+        img = Image.new('RGBA', (width, height), (180, 180, 180, 100))
         draw = ImageDraw.Draw(img)
 
         # Schriftart laden
         try:
             font = ImageFont.truetype("arial.ttf", 14)
+            font_sub = ImageFont.truetype("arialbd.ttf", 10)
+            font_y_axis = ImageFont.truetype("arial.ttf", 14)
+            font_y_axis.bold = True
+            font_y_axis.align = "right"
             font_bold = ImageFont.truetype("arialbd.ttf", 16)
-            font_title = ImageFont.truetype("arialbd.ttf", 20)
+            font_title = ImageFont.truetype("arialbd.ttf", 40)
+            nominal_size = self.Tolerance.get('nominal_size', -1.0)
+
+            # Liste relevanter Maße (Nominalmaß + Ergebnisse)
+            Dd = {
+                "nominal": self.Bore.get('nominal_size'),
+                "ULS": self.Bore['results'].get('ULS'),
+                "LLS": self.Bore['results'].get('LLS'),
+                "uls": self.Shaft['results'].get('uls'),
+                "lls": self.Shaft['results'].get('lls')
+            }
+            logger.debug(f"\033[94mRelevant dimensions for drawing: {Dd}\033[0m")
+            # max. Abweichung von Nominalmaß berechnen
+            max_dev = max(abs(v - nominal_size) for v in Dd.values() if isinstance(v, (int, float)))
+            # Platz oben/unten: 20 %        
+            padding = 0.2 * max_dev
+            y_min = nominal_size - (max_dev + padding)
+            y_max = nominal_size + (max_dev + padding)
+
+            # Wenn liste eine None-Werte enthält, spriunge aus der Funktion
+            if any(v is None or v <= 0 for v in Dd.values()):
+                logger.error(f"\033[91mBohrungs- oder Wellendurchmesser nicht gesetzt oder ungültig. {Dd}\033[0m")
+                # Wenn Werte ungültig sind, gib ein leeres PNG-Bild zurück
+                buf = BytesIO()
+                empty_img = Image.new('RGB', (10, 10), (255, 255, 255, 0))
+                # Schreibe einen Text mit Fehlermeldung ins leere Bild
+                error_draw = ImageDraw.Draw(empty_img)
+                error_text = "Fehler: Bohrungs- oder Wellendurchmesser nicht gesetzt oder ungültig."
+                error_draw.text((2, 2), error_text, fill='red')
+                empty_img.save(buf, format='PNG')
+                buf.seek(0)
+                self.Drawing['image'] = f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode('utf-8')}"
+                return {base64.b64encode(buf.getvalue()).decode('utf-8')}
+                # raise ValueError("Bohrungs- oder Wellendurchmesser nicht gesetzt oder ungültig.")
+            
         except:
             font = ImageFont.load_default()
             font_bold = ImageFont.load_default()
             font_title = ImageFont.load_default()
 
+        self.get_limit_deviations()
+
         # Zeichnungstitel
-        title = f"ISO 286 Toleranzdarstellung - {self.Bore.get('selected_tolerance', '')}{self.Bore.get('selected_grade', '')}/{self.Shaft.get('selected_tolerance', '')}{self.Shaft.get('selected_grade', '')}"
-        draw.text((width // 2, 30), title, fill='black', font=font_title, anchor='mm')
+        title = f"Passung: {self.Bore.get('selected_tolerance', '')}{self.Bore.get('selected_deviation', '')} / {self.Shaft.get('selected_tolerance', '')}{self.Shaft.get('selected_deviation', '')}"
+        title += f" - Nennmaß: {self.Tolerance.get('nominal_size', -1.0)} mm"
+        draw.text((width // 2, 50), title, fill='black', font=font_title, anchor='mm')
 
         # Bohrung und Welle zeichnen
-        bore_diameter = self.Bore['results'].get('D', 50)
-        shaft_diameter = self.Shaft['results'].get('d', 50)
-    
-        # Maßstabsfaktor
-        scale = 5
-        center_x = width // 2
-        center_y = height // 2
-                
-        # Bohrung zeichnen (innen)
-        bore_radius = bore_diameter * scale / 2
-        bore_x = center_x - bore_radius
-        bore_y = center_y - bore_radius
-        bore_size = bore_radius * 2
-        draw.ellipse([bore_x, bore_y, bore_x + bore_size, bore_y + bore_size], 
-                outline='blue', width=3)
-
-        # Welle zeichnen (außen)
-        shaft_radius = shaft_diameter * scale / 2
-        shaft_x = center_x - shaft_radius
-        shaft_y = center_y - shaft_radius
-        shaft_size = shaft_radius * 2
-        draw.ellipse([shaft_x, shaft_y, shaft_x + shaft_size, shaft_y + shaft_size], 
-                outline='red', width=3)
+        bore_diameter = self.Bore['results'].get('D', 10)
+        shaft_diameter = self.Shaft['results'].get('d', 10)
+        if bore_diameter <= 0 or shaft_diameter <= 0:
+            raise ValueError("Bohrungs- oder Wellendurchmesser nicht gesetzt oder ungültig.")
         
-        # Toleranzbereiche visualisieren
-        bore_max_radius = self.Bore['results'].get('D_max', bore_diameter) * scale / 2
-        bore_min_radius = self.Bore['results'].get('D_min', bore_diameter) * scale / 2
+        center_x = int(width // 2)
+        center_y = int(height // 2)
+        margin_left = int(width * 0.1)
+        margin_right = int(width - 10)
+        margin_top = int(height * 0.1)
+        margin_bottom = int(height - (height * 0.1))
+        arrow_size = 8 # Pfeilspitzen für die Achsen
 
-        shaft_max_radius = self.Shaft['results'].get('d_max', shaft_diameter) * scale / 2
-        shaft_min_radius = self.Shaft['results'].get('d_min', shaft_diameter) * scale / 2
-
-        # Toleranzzonen zeichnen (gestrichelt)
-        def     draw_dashed_circle(x, y, radius, color, width=2):
-            dash_length = 8
-            for angle in range(0, 360, 10):
-                if angle % 20 < 10:  # Gestrichelt zeichnen
-                    rad_angle = angle * pi / 180
-                    x1 = x + radius * cos(rad_angle)
-                    y1 = y + radius * sin(rad_angle)
-                    x2 = x + radius * cos(rad_angle + 0.17)  # Kleiner Winkel für Liniensegment
-                    y2 = y + radius * sin(rad_angle + 0.17)
-                    draw.line([x1, y1, x2, y2], fill=color, width=width)
-        # Bohrungstoleranz
-        draw_dashed_circle(center_x, center_y, bore_max_radius, 'lightblue', 2)
-        draw_dashed_circle(center_x, center_y, bore_min_radius, 'lightblue', 2)
-    
-        # Wellentoleranz
-        draw_dashed_circle(center_x, center_y, shaft_max_radius, 'pink', 2)
-        draw_dashed_circle(center_x, center_y, shaft_min_radius, 'pink', 2)
-
-        # Maßlinien und Beschriftungen
-        # Bohrungsmaße
-        # draw.line([center_x - bore_radius - 50, center_y, center_x - bore_radius - 30, center_y], fill='black', width=1)
-        # draw.line([center_x + bore_radius + 30, center_y, center_x + bore_radius + 50, center_y], fill='black', width=1)
-        # draw.line([center_x - bore_radius - 40, center_y - 10, center_x - bore_radius - 40, center_y + 10], fill='black', width=1)
-        # draw.line([center_x + bore_radius + 40, center_y - 10, center_x + bore_radius + 40, center_y + 10], fill='black', width=1)
-
-        # Wellenmaße
-        draw.line([center_x - shaft_radius - 80, center_y, center_x - shaft_radius - 60, center_y], fill='black', width=1)
-        draw.line([center_x + shaft_radius + 60, center_y, center_x + shaft_radius + 80, center_y], fill='black', width=1)
-        draw.line([center_x - shaft_radius - 70, center_y - 10, center_x - shaft_radius - 70, center_y + 10], fill='black', width=1)
-        draw.line([center_x + shaft_radius + 70, center_y - 10, center_x + shaft_radius + 70, center_y + 10], fill='black', width=1)
-
-        # Beschriftungen
-        bore_label = f"Bohrung: Ø{bore_diameter} {self.Bore.get('selected_tolerance', '')}"
-        shaft_label = f"Welle: Ø{shaft_diameter} {self.Shaft.get('selected_tolerance', '')}"
-        tolerance_label = f"Passung: {self.Tolerance.get('fit_type', '')} (Smin: {self.Tolerance.get('s_min', 0):.3f}, Smax: {self.Tolerance.get('s_max', 0):.3f})"
-
-        draw.text((center_x, center_y - bore_radius - 60), bore_label, fill='blue', font=font_bold, anchor='mm')
-        draw.text((center_x, center_y - shaft_radius - 90), shaft_label, fill='red', font=font_bold, anchor='mm')
-        draw.text((center_x, center_y + bore_radius + 60), tolerance_label, fill='green', font=font_bold, anchor='mm')
-
-        # Toleranzwerte
-        bore_tol_text = f"ES: {self.Bore['results'].get('ES', 0):.3f} | EI: {self.Bore['results'].get('EI', 0):.3f} | T: {self.Bore['results'].get('T', 0):.3f}"
-        shaft_tol_text = f"es: {self.Shaft['results'].get('es', 0):.3f} | ei: {self.Shaft['results'].get('ei', 0):.3f} | t: {self.Shaft['results'].get('t', 0):.3f}"
-
-        draw.text((center_x, center_y - bore_radius - 40), bore_tol_text, fill='blue', font=font, anchor='mm')
-        draw.text((center_x, center_y - shaft_radius - 70), shaft_tol_text, fill='red', font=font, anchor='mm')
-
-        # Legende
-        legend_y = height - 120
-        draw.rectangle([50, legend_y, 70, legend_y + 15], outline='blue', width=2)
-        draw.text((80, legend_y + 7), "Bohrung Nennmaß", fill='black', font=font, anchor='lm')
+        # Berechne die Höhe des Fonts für die Platzierung des Textes
+        fit_min_bbox = draw.textbbox((0, 0), "A", font=font_bold)
+        fit_min_height = fit_min_bbox[3] - fit_min_bbox[1] if fit_min_bbox else 20
+        fit_min_width = fit_min_bbox[2] - fit_min_bbox[0] if fit_min_bbox else 20
+        # Achsenränder
+        axis_margin = int(margin_left - 4 * arrow_size)
         
-        draw.rectangle([250, legend_y, 270, legend_y + 15], outline='red', width=2)
-        draw.text((280, legend_y + 7), "Welle Nennmaß", fill='black', font=font, anchor='lm')
-        
-        draw_dashed_circle(450, legend_y + 7, 8, 'lightblue', 2)
-        draw.text((470, legend_y + 7), "Bohrung Toleranzzone", fill='black', font=font, anchor='lm')
-        
-        draw_dashed_circle(650, legend_y, 8, 'pink', 2)
-        draw.text((670, legend_y + 7), "Welle Toleranzzone", fill='black', font=font, anchor='lm')
+        # Umrechnungsfunktion von mm -> Pixel
+        def y_to_px(val):
+            ret = int(margin_bottom - (val - y_min) / (y_max - y_min) * (margin_bottom - margin_top))
+            # logger.debug(f"y_to_px({val}) =>  -> {ret}")
+            return ret
 
-        # In Base64 konvertieren
+        # Achsen zeichnen
+        # Y-Achse (vertikal, links)
+        draw.line([(margin_left, margin_top), (margin_left, margin_bottom)], fill='black', width=2)
+        draw.line([(margin_left, center_y), (margin_right, center_y)], fill='black', width=2)
+
+        arrow_width = int(sin(radians(30)) * arrow_size )  # Breite der Pfeilspitze basierend auf dem Winkel
+
+        # Pfeilspitze oben
+        draw.polygon([
+            (margin_left, margin_top),
+            (margin_left + arrow_width, margin_top+arrow_size),
+            (margin_left - arrow_width, margin_top+arrow_size)
+            ], fill='black')
+        
+        # Pfeilspitze unten
+        draw.polygon([
+            (margin_left, margin_bottom),
+            (margin_left + arrow_width, margin_bottom - arrow_size),
+            (margin_left - arrow_width, margin_bottom - arrow_size)
+        ], fill='black')
+
+        y_legende = Image.new('RGB', (int(margin_left-arrow_size), height), (242, 242, 242, 0))
+        y_draw = ImageDraw.Draw(y_legende)
+
+        # Werte als float-Liste mit 10 gleichmäßig verteilten Schritten zwischen min(Dd) und max(Dd)
+        if all(isinstance(v, (int, float)) for v in Dd.values()) and min(Dd.values()) != max(Dd.values()):
+            steps = 10
+            values = [y_min + i * (y_max - y_min) / steps for i in range(steps + 1)]
+            values = [round(v, 3) for v in values]
+        else:
+            values = [nominal_size]
+
+            # values = sorted(values)
+
+        # Y-Achsen-Beschriftungen zeichnen
+        for i, v in enumerate(values):
+            if i == 0 or i == len(values) - 1:
+                continue 
+            y_pos = y_to_px(v)
+            draw.line([(margin_left - 5, y_pos), (margin_left, y_pos)], fill="black", width=1)
+            draw.text((axis_margin, y_pos), f"{v:.3f}", fill='black', font=font_y_axis, anchor='rm')
+
+        # Bohrung (H7) als grünes Rechteck
+        y_top = min(y_to_px(Dd['ULS']), y_to_px(Dd['LLS']))
+        y_bottom = max(y_to_px(Dd['ULS']), y_to_px(Dd['LLS']))
+        left = margin_left + margin_left/10
+
+        draw.rectangle(
+            [(left, margin_top), (left + margin_left*1.5, y_top)],
+            outline="green", fill=(144, 238, 144, 50)  # hellgrün transparent
+        )
+        draw.rectangle(
+            [(left, y_top), (left + margin_left*1.5, y_bottom)],
+            outline="green", fill=(144, 238, 144, 255)  # hellgrün vollständig sichtbar
+        )
+
+        # Welle als blaues Rechteck
+        y_top = min(y_to_px(Dd['uls']), y_to_px(Dd['uls']))
+        y_bottom = max(y_to_px(Dd['lls']), y_to_px(Dd['lls']))
+        left = left + margin_left*1.8
+        draw.rectangle(
+            [(left, y_bottom), (left + margin_left*1.5, margin_bottom)],
+            outline="blue", fill=(144, 238, 244, 50)  # hellblau transparent
+        )
+        draw.rectangle(
+            [(left, y_top), (left + margin_left*1.5, y_bottom)],
+            outline="blue", fill=(144, 238, 244, 255)  # hellblau vollständig sichtbar
+        )
+
+        # Übergangsbereich s_min als gelbes Rechteck
+        y_top = min(y_to_px(Dd['uls']), y_to_px(Dd['ULS']))
+        y_bottom = max(y_to_px(Dd['uls']), y_to_px(Dd['ULS']))
+        left = left + margin_left*1.8
+        draw.rectangle(
+            [(left, y_top), (left + margin_left*1.5, y_bottom)],
+            outline="yellow", fill=(255, 255, 224, 50)  # hellgelb transparent
+        )
+        # Draw the ULS value centered above the yellow rectangle
+        draw.text(
+            # ( (margin_left*1.5 - left) // 2, y_top - fit_min_height * 2),
+            ( (left + margin_left*1.5 // 2) , y_top - fit_min_height ),
+            f"{Dd['ULS']:.3f} mm",
+            fill=(10, 10, 10, 255),
+            font=font_bold, anchor='mb'
+        )
+
+        # Draw the uls value centered below the yellow rectangle
+        draw.text(
+            # ( (margin_left*1.5 - left) // 2, y_top - fit_min_height * 2),
+            ( (left + margin_left*1.5 // 2) , y_bottom + fit_min_height ),
+            f"{Dd['uls']:.3f} mm",
+            fill=(10, 10, 10, 255),
+            font=font_bold, anchor='mt'
+        )
+
+        # Übergangsbereich s_max als oranges Rechteck
+        y_top = min(y_to_px(Dd['lls']), y_to_px(Dd['LLS']))
+        y_bottom = max(y_to_px(Dd['lls']), y_to_px(Dd['LLS']))
+        left = left + margin_left*1.8
+        draw.rectangle(
+            [(left, y_top), (left + margin_left*1.5, y_bottom)],
+            outline="orange", fill=(255, 224, 192, 50)  # hellorange transparent
+        )
+
+        # Draw the ULS value centered above the yellow rectangle
+        draw.text(
+            # ( (margin_left*1.5 - left) // 2, y_top - fit_min_height * 2),
+            ( (left + margin_left*1.5 // 2) , y_top - fit_min_height ),
+            f"{Dd['LLS']:.3f} mm",
+            fill=(10, 10, 10, 255),
+            font=font_bold, anchor='mb'
+        )
+
+        # Draw the uls value centered below the yellow rectangle
+        draw.text(
+            # ( (margin_left*1.5 - left) // 2, y_top - fit_min_height * 2),
+            ( (left + margin_left*1.5 // 2) , y_bottom + fit_min_height ),
+            f"{Dd['lls']:.3f} mm",
+            fill=(10, 10, 10, 255),
+            font=font_bold, anchor='mt'
+        )
+
+        # Legende mit Rechteck rechts unten
+        legend_y = margin_bottom - 130
+        legend_x = margin_right - 150
+
+        # Legendenrahmen
+        draw.rectangle(
+            [(legend_x, legend_y), (margin_right, legend_y + 160)],
+            outline="black", fill=(255, 255, 255, 200)  # weiß mit Transparenz
+        )
+        draw.text((legend_x + (margin_right - legend_x) // 2, legend_y + 5), "Legende", fill='black', font=font_bold, anchor='ma')  
+
+        # Bohrung
+        legend_y = legend_y + 40
+        draw.rectangle(
+            [(legend_x + 10, legend_y), (legend_x + 30, legend_y + 20)],
+            outline="green", fill=(144, 238, 144, 128)      # hellgrün transparent
+        )
+        draw.text((legend_x + 40, legend_y), f"Bohrung {self.Bore.get('selected_tolerance', '')}{self.Bore.get('selected_deviation', '')}", fill='black', font=font)
+
+        #Welle
+        legend_y = legend_y + 30
+        draw.rectangle(
+            [(legend_x + 10, legend_y), (legend_x + 30, legend_y + 20)],
+            outline="blue", fill=(144, 238, 244, 128)  # hellblau transparent
+        )
+        draw.text((legend_x + 40, legend_y), f"Welle {self.Shaft.get('selected_tolerance', '')}{self.Shaft.get('selected_deviation', '')}", fill='black', font=font)
+
+        # Passungsbereich Minimales Spiel
+        legend_y = legend_y + 30
+        draw.rectangle(
+            [(legend_x + 10, legend_y), (legend_x + 30, legend_y + 20)],
+            outline="yellow", fill=(255, 255, 224, 128)  # hellgelb transparent
+        )
+        if self.Tolerance.get('fit_type', '') == 'clearance' or self.Tolerance.get('fit_type', '') == 'transition':
+            draw.text((legend_x + 40, legend_y), f"Minimales Spiel", fill='black', font=font)
+        else:
+            draw.text((legend_x + 40, legend_y), f"Maximales Spiel", fill='black', font=font)
+
+        # Passungsbereich Maximales Spiel
+        legend_y = legend_y + 30
+        draw.rectangle(
+            [(legend_x + 10, legend_y), (legend_x + 30, legend_y + 20)],
+            outline="orange", fill=(255, 224, 192, 50)  # helles orange transparent
+        )
+        if self.Tolerance.get('fit_type', '') == 'clearance' or self.Tolerance.get('fit_type', '') == 'transition':
+            draw.text((legend_x + 40, legend_y), f"Maximales Spiel", fill='black', font=font)
+        else:
+            draw.text((legend_x + 40, legend_y), f"Minimales Spiel", fill='black', font=font)
+
+        # Zeichnung speichern
         buf = BytesIO()
         img.save(buf, format='PNG')
         buf.seek(0)
-        self.Drawing['image'] = f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode('utf-8')}",
+        # self.Drawing['image'] = f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode('utf-8')}",
 
-        if self.Tolerance.get('iso_286_2', True):
-            self.Drawing['alt'] = f"Technische Zeichnung der Passung {self.Bore.get('selected_tolerance', '')}{self.Bore.get('selected_grade', '')}/{self.Shaft.get('selected_tolerance', '')}{self.Shaft.get('selected_grade', '')} für Nennmaß {self.Tolerance['nominal_size']} mm"
-        else:
-            self.Drawing['alt'] = f"Technische Zeichnung der Passung {self.Bore.get('selected_tolerance', '')}/{self.Shaft.get('selected_tolerance', '')} für Nennmaß {self.Tolerance['nominal_size']} mm mit Grundtoleranz IT{self.Tolerance.get('selected_tolerance', 0)}"
+        # if self.Tolerance.get('iso_286_2', True):
+        #     self.Drawing['alt'] = f"Technische Zeichnung der Passung {self.Bore.get('selected_tolerance', '')}{self.Bore.get('selected_deviation', '')}/{self.Shaft.get('selected_tolerance', '')}{self.Shaft.get('selected_deviation', '')} für Nennmaß {self.Tolerance['nominal_size']} mm"
+        # else:
+        #     self.Drawing['alt'] = f"Technische Zeichnung der Passung {self.Bore.get('selected_tolerance', '')}/{self.Shaft.get('selected_tolerance', '')} für Nennmaß {self.Tolerance['nominal_size']} mm mit Grundtoleranz IT{self.Tolerance.get('selected_tolerance', 0)}"
 
-        if self.Drawing['image'] == '':
-            logger.error("Fehler beim Erstellen der technischen Zeichnung")
-            return (2006, "Fehler beim Erstellen der technischen Zeichnung")
-        return None
+        # if self.Drawing['image'] == '':
+        #     logger.error("Fehler beim Erstellen der technischen Zeichnung")
+        #     return (2006, "Fehler beim Erstellen der technischen Zeichnung")
+        return buf
 
     def calculate(self):
         """
         Berechnet und setzt verschiedene Passungswerte für Bohrung und Welle basierend auf der Nennmaß, Toleranz und Grenzabmaßen.
         Für die Bohrung werden folgende Werte berechnet:
         - D: Nennmaß der Bohrung
-        - IT: Toleranzwert der Bohrung
         - T: Toleranzfeld (ES - EI)
         - D_min: Mindestmaß der Bohrung (Nennmaß + EI/1000)
         - D_max: Höchstmaß der Bohrung (Nennmaß + ES/1000)
         Für die Welle werden folgende Werte berechnet:
-        - it: Toleranzwert der Welle
         - t: Toleranzfeld (es + ei)
         - d_min: Mindestmaß der Welle (Nennmaß + es/1000)
         - d_max: Höchstmaß der Welle (Nennmaß - ei/1000)
         Falls erforderliche Werte nicht vorhanden sind, werden die Ergebnisse auf -1.0 gesetzt.
         """
+                
         response = self.get_limit_deviations()
         if response is not None:
             self.Bore['results'] = {key: -1.0 for key in self.Bore['results']}
             self.Shaft['results'] = {key: -1.0 for key in self.Shaft['results']}
+        else:
             logger.error(f"Fehler bei der Berechnung der Grenzabmaße: {response}")
-            return response
+            raise ValueError(f"Fehler bei der Berechnung der Grenzabmaße")      
         
-        self.Bore['results']['T'] = self.Bore['results']['ES'] - self.Bore['results']['EI']
-        self.Bore['results']['D'] = self.Tolerance['nominal_size']
-        self.Bore['results']['IT'] = float(self.Tolerance.get('selected_tolerance', 0))
-        self.Bore['results']['D_min'] = round(float(self.Tolerance['nominal_size'] + self.Bore['results']['EI']/1000.0), 4)
-        self.Bore['results']['D_max'] = round(float(self.Tolerance['nominal_size'] + self.Bore['results']['ES']/1000.0), 4)
-
-        self.Shaft['results']['t'] = self.Shaft['results']['es'] + self.Shaft['results']['ei']
-        self.Shaft['results']['Dd'] = self.Tolerance['nominal_size']
-        self.Shaft['results']['it'] = float(self.Tolerance.get('selected_tolerance', 0))
-
-        if self.draw_image() is not None:
-            drawing_result = self.draw_image()
-            logger.error(f"Fehler Zeichnung: {drawing_result[:40]}")
-            return drawing_result
+        # Mindest- und Höchstmaße der Bohrung berechnen
+        try:    
+            self.Tolerance['s_min'] = float(self.Bore['results']['EI'] - self.Shaft['results']['es'])
+            self.Tolerance['s_max'] = float(self.Bore['results']['ES'] - self.Shaft['results']['ei'])
+            self.Tolerance['fit_type'] = 'clearance' if self.Tolerance['s_min'] > 0 else 'interference' if self.Tolerance['s_max'] < 0 else 'transition'
+        except Exception as e:
+            logger.error(f"Error retrieving tolerance value: {e}")
+            return (505, f"Error retrieving tolerance value: {e}")
+        
         
         return None
 
@@ -570,7 +737,7 @@ class FitsView(AppTemplateMixin, TemplateView):
 
     template_name = "fits/index.html"
     app_name = 'fits'
-
+    
     def get_context_data(self, **kwargs):
 
         logger.error(f"FITS View: {self.get_app_name()} ")
@@ -597,8 +764,15 @@ class FitsRPCView(AppTemplateMixin, View):
         serialize_service(hint=None): Serialisiert das Service-Objekt und gibt eine JSON-Antwort zurück.
         post_hint(request, hint): Sendet einen Hinweis (Hint) als Antwort aus einer POST-Anfrage.
         post(request): Verarbeitet POST-Anfragen für die FitsService-Ansicht. (DEPRECATED)
-
     """
+
+    template_name = "fits/index.html"
+    app_name = 'fits'
+    app_description = 'Passungen nach ISO 286-1 und ISO 286-2'
+    app_version = '0.1.0'
+    app_email = 'joerg@bernau.family'
+    app_website = 'https://www.bernau.family'
+
     def __init__(self, **kwargs):
         """Initialisiert die View und stellt sicher, dass das zugehörige Template gesetzt ist.
         Versucht, die 'fits_service'-Daten aus der Benutzersitzung zu laden und rekonstruiert ein FitsService-Objekt,
@@ -607,9 +781,10 @@ class FitsRPCView(AppTemplateMixin, View):
             **kwargs: Zusätzliche Schlüsselwortargumente für die Initialisierung der Basisklasse.
         """
         super().__init__(**kwargs)
-        self.template_name = "index.html"
-
-    def get_service(self, request):
+        if not self.template_name:
+            raise ValueError("Template name must be set for FitsRPCView")
+        
+    def load_session(self, request):
         """
         Holt die 'fits_service'-Daten aus der Benutzersitzung und rekonstruiert ein FitsService-Objekt.
 
@@ -634,7 +809,7 @@ class FitsRPCView(AppTemplateMixin, View):
             service = None
         return service
 
-    def save_service(self, request, service):
+    def save_session(self, request, service):
         """
         Speichert die Eigenschaften des übergebenen Service-Objekts in der Session des Requests.
 
@@ -654,7 +829,7 @@ class FitsRPCView(AppTemplateMixin, View):
         request.session.modified = True
         # print(f"\033[92mSaved FitsService to session: {request.session['fits_service']}\033[0m")
 
-    def serialize_service(self, hint=None):
+    def serialize_session(self, hint=None):
         """
         Serialisiert das Service-Objekt und gibt eine JSON-Antwort zurück.
         Diese Methode ruft das Service-Objekt aus der aktuellen Anfrage ab und prüft,
@@ -665,7 +840,7 @@ class FitsRPCView(AppTemplateMixin, View):
         Rückgabe:
             JsonResponse: JSON-Antwort mit den Service-Daten oder einer Fehlermeldung.
         """
-        service = self.get_service(self.request)
+        service = self.load_session(self.request)
         if not service:
             return JsonResponse({'success': False, 'error': 'No service found in session'}, status=404)
 
@@ -683,7 +858,7 @@ class FitsRPCView(AppTemplateMixin, View):
                     'Drawing': service.Drawing
                 }
             }, status=200, content_type='application/json', headers={'HX-Trigger': json.dumps({'show-hint': hint[1]})})
-            logger.info(f"POST Hint Response: {hint}")
+            # logger.info(f"POST Hint Response: {hint}")
             return response
         else:
             response_data = {
@@ -697,22 +872,34 @@ class FitsRPCView(AppTemplateMixin, View):
             }
             return JsonResponse(status=200, content_type='application/json', data=response_data)
 
-    def post_hint(self, request, hint):
-        """
-        @DEPRECATED
-        Sendet einen Hinweis (Hint) als Antwort aus einer POST-Anfrage.
-        Args:
-            request (HttpRequest): Die eingehende HTTP-POST-Anfrage.
-            hint (str): Der zu sendende Hinweis.
-        """
-        response = JsonResponse({
-            'messageType': 'Hint',
-            'message': hint
-        }, status=200, content_type='application/json', headers={'HX-Trigger': json.dumps({'show-hint': hint})})
-        logger.info(f"POST Hint Response: {hint}")
-        return response
+    def get(self, request):
 
-    def post(self, request):
+        service = self.load_session(request)
+
+        context = {}
+        context['app_name'] = self.app_name
+        context['app_description'] = self.app_description
+        context['app_version'] = self.app_version
+        context['app_email'] = self.app_email
+        context['app_website'] = self.app_website
+        context['service'] = service if service else None
+
+        # context['Bore'] = self.load_session(request).Bore if self.load_session(request) else None
+        # context['Shaft'] = self.load_session(request).Shaft if self.load_session(request) else None
+        template_name = getattr(self, 'template_name', None) or "fits/index.html"
+        
+        match request.path:
+            case '/fits/':
+                logger.debug(f"Rendering template: {template_name}")
+                return render(request, template_name, context)
+            case '/fits/calculation/image/':
+                img = service.draw_image()
+                if img is not None:
+                    return FileResponse(img, content_type='image/png')
+            case _:
+                return JsonResponse({'error': 'Unknown path'}, status=404)
+
+    def post(self, request, tolerance=None, deviations=None):
         """
         Verarbeitet POST-Anfragen für die FitsService-Ansicht.
         Diese Methode verarbeitet die eingehenden Daten entweder als JSON oder als Formulardaten,
@@ -727,6 +914,16 @@ class FitsRPCView(AppTemplateMixin, View):
             JsonResponse: Eine JSON-Antwort mit dem Ergebnis der Verarbeitung oder einer Fehlermeldung.
         """
 
+        # # Kontextdaten initialisieren
+        # context = {
+        #     'app_name': self.app_name,
+        #     'service': None,
+        #     'Bore': None,
+        #     'Shaft': None,
+        #     'Tolerance': None,
+        #     'Drawing': None,
+        # }
+
         try:
             if request.content_type == 'application/json':
                 form_data = json.loads(request.body.decode('utf-8'))
@@ -736,84 +933,155 @@ class FitsRPCView(AppTemplateMixin, View):
             form_data['Hx-Trigger'] = request.headers.get('Hx-Trigger') or form_data.get('Hx-Trigger')
 
             # Service aus Session holen oder neu erzeugen
-            service = self.get_service(request)
+            service = self.load_session(request)
             if not service:
                 service = FitsService(
                     tolerance={
-                        'nominal_size': float(form_data.get('nominal_size', None)),
+                        'nominal_size': float(form_data.get('nominal_size', 0.0)),
                         'fit-type-msg': '',
                         'fit-type': 'bore',
                         }
                 )
 
             # Update Service-Objekt mit neuen Werten
-            if service.Bore is None:
-                service.Bore = {}
-                service.Bore['selected_tolerance'] = form_data.get('bore-tolerance', '')
-                service.Bore['selected_grade'] = form_data.get('bore-grade', '')
-            elif service.Shaft is None:
-                service.Shaft = {}
-                service.Shaft['selected_tolerance'] = form_data.get('shaft-tolerance', '')
-                service.Shaft['selected_grade'] = form_data.get('shaft-grade', '')
-            elif service.Tolerance is None:
-                service.Tolerance = {}
-                service.Tolerance['selected_tolerance'] = form_data.get('tolerance-select', None)
-                service.Tolerance['value'] = float(form_data.get('tolerance-value', -1))
+            # if service.Bore is None:
+            #     service.Bore = {}
+            #     service.Bore['selected_tolerance'] = form_data.get('bore_tolerance', '')
+            #     service.Bore['selected_deviation'] = form_data.get('bore_grade', '')
+            # elif service.Shaft is None:
+            #     service.Shaft = {}
+            #     service.Shaft['selected_tolerance'] = form_data.get('shaft_tolerance', '')
+            #     service.Shaft['selected_deviation'] = form_data.get('shaft_grade', '')
+            # elif service.Tolerance is None:
+            #     service.Tolerance = {}
+            #     service.Tolerance['nominal_size'] = float(form_data.get('nominal_size', 1.0))
+            #     service.Tolerance['selected_tolerance'] = form_data.get('tolerance-select', None)
+            #     service.Tolerance['value'] = float(form_data.get('tolerance-value', -1))
+            #     service.Tolerance['fit_type_system_msg'] = form_data.get('fit_type_system_msg', '')
+            #     service.Tolerance['fit-type-msg'] = form_data.get('fit-type-msg', '')
 
             if form_data.get('Hx-Trigger') is None:
                 logger.error("Hx-Trigger header is missing in the request")
-                raise ValueError("Hx-Trigger is required")
+                raise Exception("Hx-Trigger is required")
 
             match request.headers.get('Hx-Trigger'):
                 case 'nominal_size':
-                    # Remove all leading/trailing non-digit characters around the nominal size
-                    raw_nominal_size = form_data.get('nominal_size', '1.0')
-                    cleaned_nominal_size = re.sub(r'^\D+|\D+$', '', str(raw_nominal_size))
-                    service.Tolerance['nominal_size'] = float(cleaned_nominal_size or 1.0)
-                    logger.debug(f"Updated Nominal Size: {service.Tolerance.get('nominal_size', -1.0)}")
-                    service.get_tolerances(nominal_size=service.Tolerance.get('nominal_size', -1.0))
-                    if service.Bore.get('selected_grade') is not None and service.Bore.get('selected_grade') != '':
-                        service.get_values(isBore=True)
-                    if service.Shaft.get('selected_grade') is not None and service.Shaft.get('selected_grade') != '':
-                        service.get_values(isBore=False)
-                case 'bore-tolerance':
-                    service.Bore['selected_tolerance'] = form_data.get('bore-tolerance', 
-                        service.Tolerance.get('fit-type-system-msg')== 'bore' and 'H' or None)
-                    logger.debug(f"Selected Bore Grade: {service.Bore}")
-                    service.get_grades(isBore=True)
-                case 'shaft-tolerance':
-                    service.Shaft['selected_tolerance'] = form_data.get('shaft-tolerance', 
-                        service.Tolerance.get('fit-type-system-msg')== 'shaft' and 'h' or None)
-                    logger.debug(f"Selected Shaft Grade: {service.Shaft}")
-                    service.get_grades(isBore=False)
-                case 'bore-grade':
-                    service.Bore['selected_grade'] = form_data.get('bore-grade', None)
-                    if service.Bore.get('selected_grade') is not None and service.Bore.get('selected_grade') != '':
-                        service.get_values(isBore=True)
-                    logger.debug(f"Selected Bore Grade: {service.Bore}")
-                case 'shaft-grade':
-                    service.Shaft['selected_grade'] = form_data.get('shaft-grade', None)
-                    if service.Shaft.get('selected_grade') is not None and service.Shaft.get('selected_grade') != '':
-                        service.get_values(isBore=False)
-                    logger.debug(f"Selected Shaft Grade: {service.Shaft}")
-                case 'fit-system-select':
-                    service.Tolerance['fit-type-system-msg'] = form_data.get('fit-system-select', None)
-                    print(f"\033[94mDEBUG: Found fit system: {service.Tolerance['fit-type-system-msg']}\033[0m")
+                    # Aktualisiere Nennmaß und berechne Toleranzen
+                    nominal = float(form_data.get('nominal_size', 0.0))
+                    service.get_tolerances( nominal )
+                    service.Tolerance['nominal_size']   = nominal
+                    service.Bore['nominal_size']        = nominal
+                    service.Bore['selected_tolerance']  = form_data.get('bore_tolerance', 'H')
+                    service.Bore['selected_deviation']  = form_data.get('bore_deviation', 7 )
+                    service.Shaft['nominal_size']       = nominal
+                    service.Shaft['selected_tolerance'] = form_data.get('shaft_tolerance', 'h')
+                    service.Shaft['selected_deviation'] = form_data.get('shaft_deviation', 7 )
+                    service.get_limit_deviations()
+                    # service.calculate()
+                    # logger.debug(f"\033[92mAfter Nominal Size update: \nBore: {service.Bore}\n, Shaft:\n{service.Shaft},\nTolerance:\n{service.Tolerance}\033[0m")
+                # case 'tolerance-select':
+                case 'bore_tolerance':
+                    # Setze den Wert auch wenn vom disabled Select Formularfeld nichts zurückkommt
+                    service.Bore['selected_tolerance'] = form_data.get('bore_tolerance', 
+                        'H' if form_data.get('fit-system-select') == 'bore' and form_data.get('bore_tolerance') is None else None)
+                    service.get_deviations(isBore=True)
+                    # logger.debug(f"\033[94mAfter Nominal Bore-tolerance update: {service.Bore.get('deviations', [])} {service.Bore['selected_tolerance']}\033[0m" )
+                    html = render_to_string("fits/partials/iso286_selects.html", {
+                        'values': service.Bore.get('deviations', []),
+                        'selected': service.Bore.get('selected_deviation', None)
+                    })
+                    self.save_session(request, service)
+                    return HttpResponse(html)
+                case 'bore_deviation':
+                    service.Bore['selected_tolerance'] = form_data.get('bore_tolerance', 'H')
+                    service.Bore['selected_deviation'] = form_data.get('bore_deviation', 7)
+
+                    service.get_values(isBore=True, tolerance_class=service.Bore.get('selected_tolerance', None), tolerance_deviation=service.Bore.get('selected_deviation', None) )
+                    self.save_session(request, service)
+                    html = render_to_string("fits/partials/data_section.html", {
+                        'fit_system': 'bore',
+                        'ES_value':  f"{service.Bore.get('results', {}).get('ES', 0)} µm",
+                        'EI_value':  f"{service.Bore.get('results', {}).get('EI', 0)} µm",
+                        'T_value':   f"{service.Bore.get('results', {}).get('T', 0)} µm",
+                        'ULS_value': f"{service.Bore.get('results', {}).get('ULS', 0):.3f}  mm",
+                        'LLS_value': f"{service.Bore.get('results', {}).get('LLS', 0):.3f}  mm"
+                    })
+                    # logger.debug(f"\033[94mSelected Bore Results: {service.Bore.get('results')}\033[0m")
+                    self.save_session(request, service)
+                    return HttpResponse(html)
+                case 'shaft_tolerance':
+                    # Setze den Wert auch wenn vom disabled Select Formularfeld nichts zurückkommt
+                    service.Shaft['selected_tolerance'] = form_data.get('shaft_tolerance', 
+                        'h' if form_data.get('fit-system-select') == 'shaft' and form_data.get('shaft_tolerance') is None else None)
+                    service.get_deviations(isBore=False)
+                    # logger.debug(f"\033[94mAfter Nominal Shaft-tolerance update: {service.Shaft.get('deviations', [])} {service.Shaft['selected_tolerance']}\033[0m" )
+                    html = render_to_string("fits/partials/iso286_selects.html", {
+                        'values': service.Shaft.get('deviations', []),
+                        'selected': service.Shaft.get('selected_deviation', None)
+                    })
+                    self.save_session(request, service)
+                    return HttpResponse(html)
+                case 'shaft_deviation':
+                    service.Shaft['selected_tolerance'] = form_data.get('shaft_tolerance', 'h')
+                    service.Shaft['selected_deviation'] = form_data.get('shaft_deviation', 7)
+
+                    service.get_values(isBore=False, tolerance_class=service.Shaft.get('selected_tolerance', None), tolerance_deviation=service.Shaft.get('selected_deviation', None) )
+                    html = render_to_string("fits/partials/data_section.html", {
+                        'fit_system': 'shaft',
+                        'ES_value':  f"{service.Shaft.get('results', {}).get('es', 0)} µm",
+                        'EI_value':  f"{service.Shaft.get('results', {}).get('ei', 0)} µm",
+                        'T_value':   f"{service.Shaft.get('results', {}).get('t', 0)} µm",
+                        'ULS_value': f"{service.Shaft.get('results', {}).get('uls', 0):.3f} mm",
+                        'LLS_value': f"{service.Shaft.get('results', {}).get('lls', 0):.3f} mm"
+                    })
+                    # logger.debug(f"\033[94mSelected Shaft Results: {service.Shaft.get('results')}\033[0m")
+                    self.save_session(request, service)
+                    return HttpResponse(html)
+                case 'fit_system_select':
+                    service.Tolerance['fit_system'] = form_data.get('fit_system_select', None)
+                    self.save_session(request, service)
+                    logger.debug(f"\033[91m: Set fit system to: {service.Tolerance['fit_system']}\033[0m")
+                case 's_min':
+                    return HttpResponse(service.Tolerance.get('s_min'), status=200)
+                case 's_max':
+                    return HttpResponse(service.Tolerance.get('s_max'), status=200)
+                case 'fit_type':
+                    # logger.debug(f"\033[92mDEBUG: Found fit type: {service.Tolerance.get('fit_type')}\033[0m")
+                    match service.Tolerance.get('fit_type'):
+                        case 'clearance':                    
+                            return HttpResponse("Spielpassung", status=200)
+                        case 'interference':
+                            return HttpResponse("Übermaßpassung", status=200)
+                        case 'transition':
+                            return HttpResponse("Übergangspassung", status=200)
+                case 'fit_system':
+                    # logger.debug(f"\033[92mDEBUG: Found fit system: {service.Tolerance.get('fit_system')}\033[0m")
+                    match service.Tolerance.get('fit_system'):
+                        case 'bore':
+                            return HttpResponse("Einheitsbohrung", status=200)
+                        case 'shaft':
+                            return HttpResponse("Einheitswelle", status=200)
+                        case 'combined':
+                            return HttpResponse("Kombiniertes System", status=200)
+                    return HttpResponse(service.Tolerance.get('fit_system'), status=200)
                 case _:
                     msg = f"Unknown Hx-Trigger: '{form_data.get('Hx-Trigger')}'"
                     logger.error(msg)
-                    raise ValueError(msg)
+                    raise Exception(msg)
 
 
             # Service in Session speichern
-            self.save_service(request, service)
+            self.save_session(request, service)
+            return HttpResponse(status=200)
 
         except ValueError as ve:
-            logger.exception(f"\033[91mValue error occurred: {str(ve)} in {ve.__traceback__.tb_frame.f_code.co_filename} Zeile {ve.__traceback__.tb_lineno}\033[0m")
+            logger.exception(f"\033[91mValue error occurred: {str(ve)} in {ve.__traceback__.tb_frame.f_code.co_filename} Zeile {ve.__traceback__.tb_lineno}\033[0m.")
 
             response = JsonResponse({
                 'messageType': 'ValueError',
-                'message': f"Value error occurred: {str(ve)} in {ve.__traceback__.tb_frame.f_code.co_filename} Zeile {ve.__traceback__.tb_lineno}",
+                'message': 
+                    f"Es ist ein Wertefehler aufgetreten: {str(ve)} in {ve.__traceback__.tb_frame.f_code.co_filename} Zeile {ve.__traceback__.tb_lineno}." if settings.DEBUG 
+                    else f"Es ist ein Wertefehler aufgetreten: {str(ve)}. Bitte überprüfen Sie Ihre Eingaben.",
                 'error': str(ve)
             },
             status=400,
@@ -822,20 +1090,18 @@ class FitsRPCView(AppTemplateMixin, View):
             )
             return response
 
-        except Exception as e:
-            logger.exception(f"\033[91mGeneral error occurred: {str(e)} at line {e.__traceback__.tb_lineno}\033[0m")
+        except Exception as ge:
+            logger.exception(f"\033[91mGeneral error occurred: {str(ge)} at line {ge.__traceback__.tb_lineno}\033[0m")
             response = JsonResponse({
                 'messageType': 'GeneralError',
-                'message': str(e)
-            }, status=400, content_type='application/json', headers={'HX-Trigger': json.dumps({'showError': str(e)})})
+                'message': 
+                    f"Es ist ein allgemeiner Fehler aufgetreten: {str(ge)} in {ge.__traceback__.tb_frame.f_code.co_filename} Zeile {ge.__traceback__.tb_lineno}." if settings.DEBUG 
+                    else f"Es ist ein allgemeiner Fehler aufgetreten: {str(ge)}. Bitte versuchen Sie es erneut.",                
+                'error': str(ge)
+            },
+            status=400,
+            content_type='application/json',
+            headers={'HX-Trigger': json.dumps({'showError': str(ge)})}
+            )
             return response
-
-        # Wenn es eine HTMX-Anfrage ist, dann sende die aktualisierten Servicedaten zurück
-        result = service.calculate()
-        if result is None and request.headers.get('HX-Request') == 'true':
-            logger.debug("HTMX Request - returning serialized service")
-            return self.serialize_service()
-        else:
-            logger.error("Non-HTMX Request or calculation error - returning hint or error")
-            return self.serialize_service(result or "Unbekannter oder unbehadelter Fehler")
 

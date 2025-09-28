@@ -21,7 +21,7 @@ class Command(BaseCommand):
         'nominal_size_min': 'Nennmaß min [mm]',
         'nominal_size_max': 'Nennmaß max [mm]', 
         'tolerance_class': 'Toleranzklasse',
-        'tolerance_grade': 'Toleranzgrad',
+        'tolerance_deviation': 'Toleranzgrad',
         'tolerance_max': 'Grenzmaß max [µm]',
         'tolerance_min': 'Grenzmaß min [µm]',
         'description': 'Beschreibung (optional)',
@@ -271,14 +271,14 @@ class Command(BaseCommand):
                             
                         # Extract tolerance class and grade from combined header
                         full_class = str(data_rows[0][j]).strip()
-                        tolerance_class, tolerance_grade = self.split_tolerance_class(full_class)
+                        tolerance_class, tolerance_deviation = self.split_tolerance_class(full_class)
                         
                         # Create a new row with nominal sizes
                         row_dict = {
                             'nominal_size_min': data_rows[i][0],
                             'nominal_size_max': data_rows[i][1],
                             'tolerance_class': tolerance_class,
-                            'tolerance_grade': tolerance_grade,
+                            'tolerance_deviation': tolerance_deviation,
                             'tolerance_max': data_rows[i][j],
                             'tolerance_min': data_rows[i + 1][j],
                             'description': f"ISO 286-2 - Sheet: {sheet_name}"
@@ -291,7 +291,7 @@ class Command(BaseCommand):
 
             # Clean up data: remove rows with NaN in required columns
             required_cols = ['nominal_size_min', 'nominal_size_max', 'tolerance_class', 
-                           'tolerance_grade', 'tolerance_max', 'tolerance_min']
+                           'tolerance_deviation', 'tolerance_max', 'tolerance_min']
             df = df.dropna(subset=required_cols)
 
             # Clean numeric values
@@ -300,7 +300,7 @@ class Command(BaseCommand):
 
             # Clean tolerance class and grade - PRESERVE CASE SENSITIVITY for ISO classes
             df['tolerance_class'] = df['tolerance_class'].apply(self.clean_tolerance_class)
-            df['tolerance_grade'] = df['tolerance_grade'].apply(self.clean_tolerance_grade)
+            df['tolerance_deviation'] = df['tolerance_deviation'].apply(self.clean_tolerance_grade)
 
             return df
 
@@ -379,7 +379,7 @@ class Command(BaseCommand):
                         'nominal_size_min': self.safe_int(row.get('nominal_size_min')),
                         'nominal_size_max': self.safe_int(row.get('nominal_size_max')),
                         'tolerance_class': str(row.get('tolerance_class', '')).strip(),
-                        'tolerance_grade': str(row.get('tolerance_grade', '')).strip(),
+                        'tolerance_deviation': str(row.get('tolerance_deviation', '')).strip(),
                         'tolerance_max': self.safe_float(row.get('tolerance_max')),
                         'tolerance_min': self.safe_float(row.get('tolerance_min')),
                         'description': str(row.get('description', '')).strip()
@@ -388,14 +388,14 @@ class Command(BaseCommand):
                     # Validierung der Nennmaße
                     if data['nominal_size_min'] >= data['nominal_size_max']:
                         raise ValueError(
-                            f"Toleranz {data['tolerance_class']}{data['tolerance_grade']} "
+                            f"Toleranz {data['tolerance_class']}{data['tolerance_deviation']} "
                             f"Nennmaß max ({data['nominal_size_max']}) muss größer als "
                             f"Nennmaß min ({data['nominal_size_min']}) sein"
                         )
 
                     if data['nominal_size_min'] < 0 or data['nominal_size_max'] > 31500:
                         raise ValueError(
-                            f"Toleranz {data['tolerance_class']}{data['tolerance_grade']} "
+                            f"Toleranz {data['tolerance_class']}{data['tolerance_deviation']} "
                             f"Nennmaß min ({data['nominal_size_min']}) muss >= 0 und "
                             f"max darf nicht größer als 31500 mm ({data['nominal_size_max']}) sein"
                         )
@@ -407,14 +407,14 @@ class Command(BaseCommand):
                     if re.match(r'^[A-Qa-q]$', data['tolerance_class']):
                         if data['tolerance_min'] >= data['tolerance_max']:
                             raise ValueError(
-                                f"Toleranz {data['tolerance_class']}{data['tolerance_grade']} "
+                                f"Toleranz {data['tolerance_class']}{data['tolerance_deviation']} "
                                 f"min ({data['tolerance_min']}) muss kleiner als "
                                 f"max ({data['tolerance_max']})"
                             )
                     else:
                         if data['tolerance_min'] >= data['tolerance_max']:
                             raise ValueError(
-                                f"Toleranz {data['tolerance_class']}{data['tolerance_grade']} "
+                                f"Toleranz {data['tolerance_class']}{data['tolerance_deviation']} "
                                 f"min ({data['tolerance_min']}) muss größer als "
                                 f"max ({data['tolerance_max']})"
                             )
@@ -423,7 +423,7 @@ class Command(BaseCommand):
                     if not data['tolerance_class']:
                         raise ValueError("Toleranzklasse darf nicht leer sein")
                     
-                    if not data['tolerance_grade']:
+                    if not data['tolerance_deviation']:
                         raise ValueError("Toleranzgrad darf nicht leer sein")
                     
                     # Updated validation to allow case-sensitive ISO classes
@@ -432,9 +432,9 @@ class Command(BaseCommand):
                             f"Toleranzklasse '{data['tolerance_class']}' muss 1-2 Buchstaben sein (z.B. H, h, JS, js, CD, cd)"
                         )
                     
-                    if not re.match(r'^\d{1,2}$', data['tolerance_grade']):
+                    if not re.match(r'^\d{1,2}$', data['tolerance_deviation']):
                         raise ValueError(
-                            f"Toleranzgrad '{data['tolerance_grade']}' muss 1-2 Ziffern sein (z.B. 7, 11)"
+                            f"Toleranzgrad '{data['tolerance_deviation']}' muss 1-2 Ziffern sein (z.B. 7, 11)"
                         )
 
                     # Import durchführen
@@ -443,7 +443,7 @@ class Command(BaseCommand):
                             nominal_size_min=data['nominal_size_min'],
                             nominal_size_max=data['nominal_size_max'],
                             tolerance_class=data['tolerance_class'],  # Case-sensitive!
-                            tolerance_grade=data['tolerance_grade'],
+                            tolerance_deviation=data['tolerance_deviation'],
                             defaults={
                                 'tolerance_max': data['tolerance_max'],
                                 'tolerance_min': data['tolerance_min'],
@@ -459,7 +459,7 @@ class Command(BaseCommand):
                             nominal_size_min=data['nominal_size_min'],
                             nominal_size_max=data['nominal_size_max'],
                             tolerance_class=data['tolerance_class'],  # Case-sensitive!
-                            tolerance_grade=data['tolerance_grade'],
+                            tolerance_deviation=data['tolerance_deviation'],
                             defaults={
                                 'tolerance_max': data['tolerance_max'],
                                 'tolerance_min': data['tolerance_min'],

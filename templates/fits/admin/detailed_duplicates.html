@@ -92,14 +92,14 @@
                     <td>{{ item.nominal_size_min }}</td>
                     <td>{{ item.nominal_size_max }}</td>
                     <td>{{ item.tolerance_class }}</td>
-                    <td>{{ item.tolerance_grade }}</td>
+                    <td>{{ item.tolerance_deviation }}</td>
                     <td>{{ item.tolerance_min }}</td>
                     <td>{{ item.tolerance_max }}</td>
                     <td>
                         <span class="count-badge count-high">{{ item.count }}</span>
                     </td>
                     <td>
-                        <a href="../?nominal_size_min={{ item.nominal_size_min }}&nominal_size_max={{ item.nominal_size_max }}&tolerance_class={{ item.tolerance_class }}&tolerance_grade={{ item.tolerance_grade }}"
+                        <a href="../?nominal_size_min={{ item.nominal_size_min }}&nominal_size_max={{ item.nominal_size_max }}&tolerance_class={{ item.tolerance_class }}&tolerance_deviation={{ item.tolerance_deviation }}"
                            class="btn btn-primary" style="padding: 5px 10px; font-size: 12px;">
                             Anzeigen
                         </a>

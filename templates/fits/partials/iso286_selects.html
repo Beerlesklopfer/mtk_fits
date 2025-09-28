@@ -1,0 +1,16 @@
+<!-- Begin partials/iso286_selects.html -->
+{% if values %}
+  {% if  selected == '' %}
+    <option disabled selected>Bitte wählen</option>
+  {% endif %}
+  {% for v in values %}
+    {% if v == selected %}
+    <option value="{{ v }}" selected>{{ v }}</option>
+    {% else %}
+    <option value="{{ v }}">{{ v }}</option>
+    {% endif %}
+  {% endfor %}
+{% else %}
+    <option disabled selected>Keine Werte verfügbar</option>
+{% endif %}
+<!-- End of partials/iso286_selects.html -->

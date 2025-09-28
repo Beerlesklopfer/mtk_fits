@@ -1,0 +1,24 @@
+                        <!-- Daten der {% if fit_system == 'bore' %}Bohrung{% else %}Welle{% endif %} -->
+                        <div style="display: flex; flex-direction: column;">
+                            <div style="display: flex; flex-direction: column; width: 100%;">
+                                <div style="display: flex; flex-direction: row; margin-bottom: 8px;">
+                                    <div style="flex: 1; padding-right: 20px;">Oberes Grenzabmaß {% if fit_system == 'bore' %}Bohrung (ES){% else %} Welle (es){% endif %}</div>
+                                    <div id="ES" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;" data-unit="µm">{{ ES_value }}</div>
+                                    <div style="flex: 1; padding-right: 20px;">Toleranz (T)</div>
+                                    <div id="T" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;" data-unit="µm">{{ T_value }}</div>
+                                </div>
+                                <div style="display: flex; flex-direction: row; margin-bottom: 8px;">
+                                    <div style="flex: 1; padding-right: 20px;">Unteres Grenzabmaß {% if fit_system == 'bore' %}Bohrung (EI){% else %}Welle (ei){% endif %}</div>
+                                    <div id="EI" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;" data-unit="µm">{{ EI_value }}</div>
+                                    <div style="flex: 1; padding-right: 20px;">Höchstmaß {% if fit_system == 'bore' %}Bohrung (ULS){% else %}Welle (uls){% endif %}</div>
+                                    <div id="ULS" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;" data-unit="µm">{{ ULS_value }}</div>
+                                </div>
+                                <div style="display: flex; flex-direction: row;">
+                                    <div style="flex: 1; padding-right: 20px;">&nbsp;</div>
+                                    <div id="IT" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;">&nbsp;</div>
+                                    <div style="flex: 1; padding-right: 20px;">Mindestmaß {% if fit_system == 'bore' %}Bohrung (LLS){% else %}Welle (lls){% endif %}</div>
+                                    <div id="LLS" class="text-info" style="flex: 1; padding-right: 20px; text-align: right;" data-unit="µm">{{ LLS_value }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- <Daten {% if fit_system == 'bore' %}Bohrung{% else %}Welle{% endif %}> -->

@@ -176,14 +176,14 @@ class ISOToleranceClassAdmin(admin.ModelAdmin):
         'tolerance_display',
         'nominal_range_display', 
         'tolerance_range_display',
-        'tolerance_grade',
+        'tolerance_deviation',
         'created_at',
         'updated_at'
     ]
     
     list_filter = [
         'tolerance_class',
-        'tolerance_grade', 
+        'tolerance_deviation', 
         NominalSizeFilter,
         ToleranceClassFilter,
         'standards',
@@ -192,7 +192,7 @@ class ISOToleranceClassAdmin(admin.ModelAdmin):
     
     search_fields = [
         'tolerance_class',
-        'tolerance_grade',
+        'tolerance_deviation',
         'description',
         'nominal_size_min',
         'nominal_size_max'
@@ -211,7 +211,7 @@ class ISOToleranceClassAdmin(admin.ModelAdmin):
             'fields': (
                 'standards',
                 'tolerance_class', 
-                'tolerance_grade',
+                'tolerance_deviation',
                 'description'
             )
         }),
@@ -271,7 +271,7 @@ class ISOToleranceClassAdmin(admin.ModelAdmin):
             'nominal_size_min', 
             'nominal_size_max', 
             'tolerance_class', 
-            'tolerance_grade'
+            'tolerance_deviation'
         ).annotate(
             count=Count('id')
         ).filter(
@@ -280,12 +280,12 @@ class ISOToleranceClassAdmin(admin.ModelAdmin):
         
         result = {}
         for dup in duplicates:
-            key = f"{dup['nominal_size_min']}-{dup['nominal_size_max']}mm {dup['tolerance_class']}{dup['tolerance_grade']}"
+            key = f"{dup['nominal_size_min']}-{dup['nominal_size_max']}mm {dup['tolerance_class']}{dup['tolerance_deviation']}"
             items = ISOToleranceClass.objects.filter(
                 nominal_size_min=dup['nominal_size_min'],
                 nominal_size_max=dup['nominal_size_max'],
                 tolerance_class=dup['tolerance_class'],
-                tolerance_grade=dup['tolerance_grade']
+                tolerance_deviation=dup['tolerance_deviation']
             )
             result[key] = items
         
@@ -298,7 +298,7 @@ class ISOToleranceClassAdmin(admin.ModelAdmin):
         # 1. Exakte Duplikate (alle Felder gleich)
         exact_dupes = (ISOToleranceClass.objects.values(
             'nominal_size_min', 'nominal_size_max', 'tolerance_class', 
-            'tolerance_grade', 'tolerance_min', 'tolerance_max'
+            'tolerance_deviation', 'tolerance_min', 'tolerance_max'
         ).annotate(count=Count('id')).filter(count__gt=1))
         
         results['exact_duplicates'] = {
@@ -310,7 +310,7 @@ class ISOToleranceClassAdmin(admin.ModelAdmin):
         # 2. Duplikate mit gleichen Toleranzen aber unterschiedlichen Beschreibungen
         tolerance_dupes = (ISOToleranceClass.objects.values(
             'nominal_size_min', 'nominal_size_max', 'tolerance_class', 
-            'tolerance_grade', 'tolerance_min', 'tolerance_max'
+            'tolerance_deviation', 'tolerance_min', 'tolerance_max'
         ).annotate(
             count=Count('id'),
             desc_count=Count('description', distinct=True)
@@ -324,7 +324,7 @@ class ISOToleranceClassAdmin(admin.ModelAdmin):
         
         # 3. Potentielle Duplikate (gleiche Größe und Toleranzklasse)
         potential_dupes = (ISOToleranceClass.objects.values(
-            'nominal_size_min', 'nominal_size_max', 'tolerance_class', 'tolerance_grade'
+            'nominal_size_min', 'nominal_size_max', 'tolerance_class', 'tolerance_deviation'
         ).annotate(count=Count('id')).filter(count__gt=1))
         
         results['potential_duplicates'] = {
@@ -395,7 +395,7 @@ class ISOToleranceClassAdmin(admin.ModelAdmin):
 
 
     def tolerance_display(self, obj):
-        return f"{obj.tolerance_class}{obj.tolerance_grade}"
+        return f"{obj.tolerance_class}{obj.tolerance_deviation}"
     tolerance_display.short_description = 'Toleranz'
     tolerance_display.admin_order_field = 'tolerance_class'
     
@@ -416,7 +416,7 @@ class ISOToleranceClassAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
     
     list_per_page = 100  # Mehr Einträge für große Tabellen
-    ordering = ['nominal_size_min', 'tolerance_class', 'tolerance_grade']
+    ordering = ['nominal_size_min', 'tolerance_class', 'tolerance_deviation']
     show_facets = admin.ShowFacets.ALWAYS
 
 """
@@ -521,7 +521,7 @@ class ISOToleranceClassAdmin(admin.ModelAdmin):
                                 'nominal_size_min': int(row.get('nominal_size_min')),
                                 'nominal_size_max': int(row.get('nominal_size_max')),
                                 'tolerance_class': str(row.get('tolerance_class')).strip(),
-                                'tolerance_grade': str(row.get('tolerance_grade')).strip(),
+                                'tolerance_deviation': str(row.get('tolerance_deviation')).strip(),
                                 'tolerance_max': float(row.get('tolerance_max')),
                                 'tolerance_min': float(row.get('tolerance_min')),
                                 'description': str(row.get('description', '')).strip()
